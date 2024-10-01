@@ -1,3 +1,21 @@
-p {
-    color: red;
+body {
+    margin: 0;
+    overflow: hidden;
+    background: linear-gradient(rgb(60, 202, 60), green);
+}
+
+h1 {
+    text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#game {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* or any specific height */
+}
+
+canvas {
+    background-color: rgb(83, 255, 103);
 }
