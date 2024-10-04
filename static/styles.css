@@ -1,21 +1,14 @@
 body {
     margin: 0;
     overflow: hidden;
-    background: linear-gradient(rgb(60, 202, 60), green);
+    background: linear-gradient(rgb(39, 236, 39), rgb(0, 153, 0));
+    height: 100vh;
 }
-
-h1 {
-    text-align: center;
-    font-family: Arial, Helvetica, sans-serif;
-}
-
+/*
 #game {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh; /* or any specific height */
+    height: 100vh;
 }
-
-canvas {
-    background-color: rgb(83, 255, 103);
-}
+*/
