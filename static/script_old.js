@@ -288,3 +288,50 @@ function dealHand(images, canvas, hands, dealer, shoe, canvasSize, phase, option
 }
 
 // ['As', 'Kh', 'Ah', 'Ac', 'Ad', '3c', '6d', '5h', 'Ah', 'Td', '4c']
+
+
+
+// Old peak function that the duck updated
+
+// Offer insurance, check if dealer has blackjack, then end hand or start player's turn
+function peak() {
+    // Offer insurance
+    if (options.insurance) {
+        if (game.dealer[1][0] === 'A') {
+            setTimeout(() => {
+                if (confirm('Would you like insurance?')) {
+                    if (game.cash >= Math.trunc(game.bets[game.activeHand] / 2)) {
+                        game.insured = Math.trunc(game.bets[game.activeHand] / 2);
+                        game.cash -= Math.trunc(game.bets[game.activeHand] / 2);
+                    }
+                    else {
+                        alert("You don't have enough chips to buy insurance.")
+                    }
+                }
+            }, 0);
+        }
+    }
+    console.log('check')
+    if (options.dealerPeak === true) {
+        // If 10 or ace showing
+        if (game.dealer[1][0] === 'A' || game.dealer[1][0] === 'K' || game.dealer[1][0] === 'Q' ||
+        game.dealer[1][0] === 'J' || game.dealer[1][0] === 'T') {
+            // If blackjack
+            if (getTotal(game.dealer).length === 2 && getTotal(game.dealer)[1] === 21) {
+                console.log('Red light');
+                game.phase = 'dealer';
+                dealersTurn();
+            }
+            else {
+                console.log('Green light')
+                game.phase = 'player';
+            }
+        }
+        else {
+            game.phase = 'player';
+        }
+    }
+    else {
+        game.phase = 'player';
+    }
+}
