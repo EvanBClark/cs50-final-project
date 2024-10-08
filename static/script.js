@@ -14,12 +14,14 @@ let game = {
 // Store all options in a global variable
 let options = {
     numberOfDecks: 1,
+    shoePenatration: .5, // percent of shoe dealer will deal before reshuffling
     soft17: 'hits', // hits, stands
     doubleAfterSplit: true,
-    surrender: 'allCards', // notAllowed, nonAces, allCards
+    doubleVariation: '9,10,11', // 'allCards' or '9,10,11' // STILL NEED TO ADD
+    surrender: 'allCards', // notAllowed, nonAces, allCards // Only supports late surrender
     dealerPeak: true,
     insurance: true,
-    splitAces1Card: false,
+    splitAces1Card: true,
     showHandTotals: true,
     dealerSpeed: 500, // in milliseconds
 };
@@ -78,12 +80,20 @@ function shuffle(numberOfDecks) {
         [decks[i], decks[j]] = [decks[j], decks[i]];
     }
     // DEV ONLY
-    // decks = ['Kc', '3h', 'Ks', 'As', 'Td', '6c', '9s', '4s']
+    // options.shoePenatration = 1;
+    // decks = ['9d' ,'Ks', 'As', '5d', 'Js', 'Ah', '7h', 'Ks', 'Qs', 'Ac', '5s', '7d', '4d']
     return decks;
 }
 
 // Take bet
 function placeBet() {
+    // If shoe is getting low, reshuffle
+    const shuffling = document.createElement('p');
+    shuffling.innerHTML = 'Shuffling'
+    if (game.shoe.length < options.numberOfDecks * 52 * (1 - options.shoePenatration)) {
+        game.shoe = shuffle(options.numberOfDecks);
+        document.getElementById('game').appendChild(shuffling);
+    }
     // Create bet input field
     const input = document.createElement('input');
     input.id = 'betValue';
@@ -121,6 +131,7 @@ function placeBet() {
                 input.remove();
                 button.remove();
                 errorMessage.remove();
+                shuffling.remove();
                 // Remove cash
                 game.cash -= betValue;
                 drawCash();
@@ -148,7 +159,9 @@ function dealHand() {
             drawCards();
             // After dealing cards, check for blackjack
             if (i === 1) {
-                peak();
+                setTimeout(() => {
+                    peak();
+                }, 100); // Small delay to ensure card is drawn
             }
         }, i * options.dealerSpeed * 2 + options.dealerSpeed);
     }
@@ -163,6 +176,7 @@ function peak() {
                     game.insured = Math.trunc(game.bets[game.activeHand] / 2);
                     game.cash -= Math.trunc(game.bets[game.activeHand] / 2);
                     drawCash();
+                    drawCards();
                 } else {
                     alert("You don't have enough chips to buy insurance.");
                 }
@@ -185,6 +199,8 @@ function continuePeak() {
                 dealersTurn();
             } else {
                 console.log('Green light');
+                game.insured = 0;
+                drawCards();
                 game.phase = 'player';
             }
         } else {
@@ -235,6 +251,9 @@ function drawCards() {
         p.innerHTML += game.hands[i];
         p.innerHTML += ' Total: ' + getTotal(game.hands[i])
         p.innerHTML += ' Bet: ' + game.bets[i] + ' | '
+    }
+    if (game.insured !== 0) {
+        p.innerHTML += 'Insurance bet: ' + game.insured + ' | '
     }
     p.innerHTML += 'Active Hand: ' + game.activeHand;
 }
@@ -459,6 +478,7 @@ function dealersTurn() {
         if (game.insured != 0) {
             // pay 2:1 insurance plus original insurance bet back
             game.cash += game.insured * 3;
+            game.insured = game.insured * 3;
             drawCards();
         }
     }
