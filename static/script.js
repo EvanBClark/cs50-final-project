@@ -4,6 +4,7 @@ let game = {
     dealer: [],
     hands: [ [] ],
     bets: [],
+    lastBet: null,
     cash: 1000,
     phase: 'bet', // bet, player, dealer
     activeHand: 0,
@@ -18,8 +19,9 @@ let options = {
     surrender: 'allCards', // notAllowed, nonAces, allCards
     dealerPeak: true,
     insurance: true,
+    splitAces1Card: false,
     showHandTotals: true,
-    dealerSpeed: 1000, // in milliseconds
+    dealerSpeed: 500, // in milliseconds
 };
 
 // Once HTML page has loaded execute main function
@@ -76,7 +78,7 @@ function shuffle(numberOfDecks) {
         [decks[i], decks[j]] = [decks[j], decks[i]];
     }
     // DEV ONLY
-    // decks = ['3c', '3h', '6s', '5h', '3d', '10h', '2s', '5c']
+    // decks = ['Kc', '3h', 'Ks', 'As', 'Td', '6c', '9s', '4s']
     return decks;
 }
 
@@ -87,7 +89,11 @@ function placeBet() {
     input.id = 'betValue';
     input.type = 'number';
     input.min = 1;
+    if (game.lastBet) {
+        input.value = game.lastBet;
+    }
     document.getElementById('game').appendChild(input);
+    document.getElementById('betValue').focus();
     // Create Bet button
     const button = document.createElement('button');
     button.innerHTML = 'Bet';
@@ -95,7 +101,6 @@ function placeBet() {
     // Create error message p tag
     const errorMessage = document.createElement('p');
     document.getElementById('game').appendChild(errorMessage);
-    // Add event listener to the button
     button.addEventListener('click', function() {
         // Get bet value and parseInt
         let betValue = document.getElementById('betValue').value;
@@ -103,16 +108,24 @@ function placeBet() {
         // Check to make sure bet is valid
         if (Number.isInteger(betValue) && betValue > 0) {
             if (betValue <= game.cash) {
+                // Clean up last hand data
+                game.dealer = [];
+                game.hands = [ [] ];
+                game.activeHand = 0;
+                game.insured = 0;
+                // Set bet
+                game.bets = [betValue];
+                // Save bet for next hand
+                game.lastBet = betValue;
                 // Remove text field and button
                 input.remove();
                 button.remove();
                 errorMessage.remove();
-                // Record bet
-                game.bets = [betValue];
                 // Remove cash
                 game.cash -= betValue;
                 drawCash();
                 // Deal hand
+                game.phase = 'player';
                 dealHand();
             }
             else {
@@ -180,6 +193,12 @@ function continuePeak() {
     } else {
         game.phase = 'player';
     }
+    // Check for player blackjack
+    const playerTotal = getTotal(game.hands[0]);
+    if (game.phase === 'player' && playerTotal.length === 2 && playerTotal[1] === 21) {
+        game.phase = 'dealer';
+        dealersTurn();
+    }
 }
 
 function drawCards() {
@@ -190,7 +209,7 @@ function drawCards() {
         d.id = 'dealer';
         document.getElementById('game').appendChild(d);
     }
-    if (game.phase === 'dealer') {
+    if (game.phase === 'dealer' || game.phase === 'bet') {
         d.innerHTML = 'Dealer: ' + game.dealer + ' Total: ' + getTotal(game.dealer);
     }
     else {
@@ -283,9 +302,14 @@ function hit() {
     if (game.phase === 'player') {
         game.hands[game.activeHand].push(game.shoe.pop());
         drawCards();
+        const handTotal = getTotal(game.hands[game.activeHand]);
         // If hand busted, move to next hand, or move to dealer turn
-        if (getTotal(game.hands[game.activeHand])[0] > 21) {
+        if (handTotal[0] > 21) {
             game.bets[game.activeHand] = 0;
+            nextHand();
+        }
+        // If hand is 21, go to next hand, don't allow another hit
+        else if ((handTotal.length === 1 && handTotal[0] === 21) || (handTotal.length === 2 && handTotal[1] === 21)) {
             nextHand();
         }
     }
@@ -294,13 +318,27 @@ function hit() {
 // If player has more hands to play, move to next hand, otherwise start dealer's turn
 function nextHand() {
     if (game.phase === 'player') {
+        // If hand busted, take bet
+        if (getTotal(game.hands[game.activeHand])[0] > 21) {
+            game.bets[game.activeHand] = 0;
+        }
+        // If no more hands to play
         if (game.hands.length === game.activeHand + 1) {
             game.phase = 'dealer';
             drawCash();
             drawCards();
             dealersTurn();
         }
+        // If more hands to play
         else {
+            // If player split and their next hand is 21
+            const playerTotal = getTotal(game.hands[game.activeHand + 1]);
+            if (playerTotal.length === 2 && playerTotal[1] === 21) {
+                game.phase = 'dealer';
+                drawCash();
+                drawCards();
+                dealersTurn();
+            }
             game.activeHand += 1;
             drawCash();
             drawCards();
@@ -355,6 +393,7 @@ function split() {
                     game.cash -= game.bets[game.activeHand];
                     drawCash();
                     drawCards();
+                    // Deal 2 more cards
                     setTimeout(() => {
                         game.hands[game.activeHand].push(game.shoe.pop());
                         drawCards();
@@ -362,6 +401,16 @@ function split() {
                     setTimeout(() => {
                         game.hands[game.activeHand + 1].push(game.shoe.pop());
                         drawCards();
+                        // If aces were split and acesSplit1Card is on, start dealer's turn
+                        if (game.splitAces1Card && game.hands[game.activeHand][0][0] === 'A') {
+                            dealersTurn();
+                            return;
+                        }
+                        // Check for 21
+                        const playerTotal = getTotal(game.hands[game.activeHand]);
+                        if (playerTotal.length === 2 && playerTotal[1] === 21) {
+                            nextHand();
+                        }
                     }, options.dealerSpeed * 2);
                 }
                 else {
@@ -405,7 +454,7 @@ function paySurrender() {
 
 // Dealer's turn
 function dealersTurn() {
-    // Check for blackjack and pay insurance
+    // Check for dealer blackjack and pay insurance
     if (getTotal(game.dealer).length === 2 && getTotal(game.dealer)[1] === 21) {
         if (game.insured != 0) {
             // pay 2:1 insurance plus original insurance bet back
@@ -413,16 +462,21 @@ function dealersTurn() {
             drawCards();
         }
     }
-
+    // Check for player blackjack
+    if (game.hands.length === 1 && game.hands[0].length === 2 && getTotal(game.hands[0])[1] === 21) {
+        processBets();
+        return;
+    }
+    // Check if all player's hands busted
     let playerHandsBusted = true;
     for (let i = 0; i < game.bets.length; i++) {
         if (game.bets[i] != 0) {
             playerHandsBusted = false;
         }
     }
-
     if (!playerHandsBusted) {
         let dealerHand = [...game.dealer];
+
         function dealerHit() {
             let total = getTotal(dealerHand);
             if (total.length === 1) {
@@ -463,10 +517,68 @@ function dealersTurn() {
 }
 
 function processBets() {
-    console.log('process bets');
-
-
-    // Need to process bets, then clean up the dealer, hand, bet, and active hand data (maybe more?) before calling dealHand()
-
-
+    // Convert dealer total to one number
+    let dealerTotal = getTotal(game.dealer);
+    if (dealerTotal.length === 2) {
+        dealerTotal = dealerTotal[1];
+    } else {
+        dealerTotal = dealerTotal[0];
+    }
+    // If dealer has blackjack, take all bets except for player blackjacks
+    dealerBlackjack = false;
+    if (dealerTotal === 21 && game.dealer.length === 2) {
+        dealerBlackjack = true;
+    }
+    for (let hand = 0; hand < game.hands.length; hand++) {
+        if (game.bets[hand] != 0) {
+            // Convert hand total to one number
+            let handTotal = getTotal(game.hands[hand]);
+            if (handTotal.length === 2) {
+                handTotal = handTotal[1];
+            }
+            else if (handTotal.length === 1) {
+                handTotal = handTotal[0];
+            }
+            // If player has blackjack (and not 21 after splitting)
+            if (handTotal === 21 && game.hands[hand].length === 2 && game.hands.length === 1) {
+                if (dealerBlackjack) {
+                    game.cash += game.bets[hand];
+                }
+                else {
+                    game.cash += game.bets[hand] * 2.5;
+                    game.bets[hand] = game.bets[hand] * 2.5;
+                }
+            }
+            // If dealer has blackjack
+            else if (dealerBlackjack) {
+                game.bets[hand] = 0;
+            }
+            // If dealer busted
+            else if (dealerTotal > 21) {
+                game.cash += game.bets[hand] * 2;
+                game.bets[hand] = game.bets[hand] * 2;
+            }
+            // If player busted
+            else if (handTotal > 21) {
+                game.bets[hand] = 0;
+            }
+            // Less than dealer
+            else if (handTotal < dealerTotal) {
+                game.bets[hand] = 0;
+            }
+            //Tied with dealer
+            else if (handTotal === dealerTotal) {
+                game.cash += game.bets[hand];
+            }
+            // Greater than dealer
+            else if (handTotal > dealerTotal) {
+                game.cash += game.bets[hand] * 2;
+                game.bets[hand] = game.bets[hand] * 2;
+            }
+        } 
+    }
+    game.phase = 'bet';
+    drawCash();
+    drawCards();
+    placeBet();
 }
