@@ -1,29 +1,31 @@
-// Create global game variable
-let game = {
-    shoe: [],
-    dealer: [],
-    hands: [ [] ],
-    bets: [],
-    lastBet: null,
-    cash: 1000,
-    phase: 'bet', // bet, player, dealer
-    activeHand: 0,
-    insured: 0,
-}
+// Create global variables
+let shoe = [];
+let dealer = [];
+let hands = [ [] ];
+let bets = [];
+let lastBet = null;
+let cash = 1000;
+let phase = 'bet'; // bet, player, dealer, animation
+let activeHand = 0;
+let insured = 0;
 
 // Store all options in a global variable
 let options = {
-    numberOfDecks: 1,
-    shoePenatration: .5, // percent of shoe dealer will deal before reshuffling
+    numberOfDecks: 6,
+    shoePenatration: .75, // percent of shoe dealer will deal before reshuffling
     soft17: 'hits', // hits, stands
     doubleAfterSplit: true,
-    doubleVariation: '9,10,11', // 'allCards' or '9,10,11' // STILL NEED TO ADD
-    surrender: 'allCards', // notAllowed, nonAces, allCards // Only supports late surrender
+    doubleVariation: 'allCards', // 'allCards' or '9,10,11' // STILL NEED TO ADD
+    surrender: 'notAllowed', // notAllowed, nonAces, allCards // Only supports late surrender
     dealerPeak: true,
-    insurance: true,
+    insurance: false,
     splitAces1Card: true,
     showHandTotals: true,
-    dealerSpeed: 500, // in milliseconds
+    dealerSpeed: 0, // in milliseconds
+    hitKey: ' ',
+    standKey: 'Enter',
+    doubleKey: 'd',
+    splitKey: 's',
 };
 
 // Once HTML page has loaded execute main function
@@ -36,7 +38,7 @@ function main() {
     // Display current cash amount
     drawCash();
     // Shuffle cards
-    game.shoe = shuffle(options.numberOfDecks);
+    shoe = shuffle(options.numberOfDecks);
     drawButtons();
     // Take bet
     placeBet();
@@ -50,7 +52,7 @@ function drawCash() {
         p.id = 'cash';
         document.getElementById('game').appendChild(p);
     }  
-    p.innerHTML = 'Cash: ' + game.cash;
+    p.innerHTML = 'Cash: ' + cash;
 }
 
 // Create a standard 52 card deck
@@ -81,7 +83,7 @@ function shuffle(numberOfDecks) {
     }
     // DEV ONLY
     // options.shoePenatration = 1;
-    // decks = ['9d' ,'Ks', 'As', '5d', 'Js', 'Ah', '7h', 'Ks', 'Qs', 'Ac', '5s', '7d', '4d']
+    // decks = ['9d' ,'Ks', 'As', '5d', '8s', 'Jh', '8c', 'Ks', '8h', 'Ac', '8s', '7d', '8d'];
     return decks;
 }
 
@@ -89,9 +91,10 @@ function shuffle(numberOfDecks) {
 function placeBet() {
     // If shoe is getting low, reshuffle
     const shuffling = document.createElement('p');
+    shuffling.id = 'shuffling'
     shuffling.innerHTML = 'Shuffling'
-    if (game.shoe.length < options.numberOfDecks * 52 * (1 - options.shoePenatration)) {
-        game.shoe = shuffle(options.numberOfDecks);
+    if (shoe.length < options.numberOfDecks * 52 * (1 - options.shoePenatration)) {
+        shoe = shuffle(options.numberOfDecks);
         document.getElementById('game').appendChild(shuffling);
     }
     // Create bet input field
@@ -99,51 +102,67 @@ function placeBet() {
     input.id = 'betValue';
     input.type = 'number';
     input.min = 1;
-    if (game.lastBet) {
-        input.value = game.lastBet;
+    if (lastBet) {
+        input.value = lastBet;
     }
     document.getElementById('game').appendChild(input);
     document.getElementById('betValue').focus();
     // Create Bet button
     const button = document.createElement('button');
+    button.id = 'betButton';
     button.innerHTML = 'Bet';
     document.getElementById('game').appendChild(button);
     // Create error message p tag
     const errorMessage = document.createElement('p');
+    errorMessage.id = 'errorMessage'
     document.getElementById('game').appendChild(errorMessage);
-    button.addEventListener('click', function() {
-        // Get bet value and parseInt
-        let betValue = document.getElementById('betValue').value;
-        betValue = parseInt(betValue);
-        // Check to make sure bet is valid
-        if (Number.isInteger(betValue) && betValue > 0) {
-            if (betValue <= game.cash) {
-                // Clean up last hand data
-                game.dealer = [];
-                game.hands = [ [] ];
-                game.activeHand = 0;
-                game.insured = 0;
-                // Set bet
-                game.bets = [betValue];
-                // Save bet for next hand
-                game.lastBet = betValue;
-                // Remove text field and button
-                input.remove();
-                button.remove();
-                errorMessage.remove();
-                shuffling.remove();
-                // Remove cash
-                game.cash -= betValue;
-                drawCash();
-                // Deal hand
-                game.phase = 'player';
-                dealHand();
-            }
-            else {
-                errorMessage.innerHTML = 'Not enough Cash';
-            }
+    button.addEventListener('click', betClicked);
+    input.addEventListener('keypress', function(event) {
+        console.log(event)
+        if (event.key === 'Enter') {
+            betClicked();
         }
-    });
+    })
+}
+
+function betClicked() {
+    const input = document.getElementById('betValue');
+    const button = document.getElementById('betButton');
+    const errorMessage = document.getElementById('errorMessage');
+    const shuffling = document.getElementById('shuffling');
+    // Get bet value and parseInt
+    let betValue = input.value;
+    betValue = parseInt(betValue);
+    // Check to make sure bet is valid
+    if (Number.isInteger(betValue) && betValue > 0) {
+        if (betValue <= cash) {
+            // Clean up last hand data
+            dealer = [];
+            hands = [ [] ];
+            activeHand = 0;
+            insured = 0;
+            // Set bet
+            bets = [betValue];
+            // Save bet for next hand
+            lastBet = betValue;
+            // Remove text field and button
+            input.remove();
+            button.remove();
+            errorMessage.remove();
+            if (shuffling) {
+                shuffling.remove();
+            }
+            // Deduct cash
+            cash -= betValue;
+            drawCash();
+            // Deal hand
+            phase = 'animation';
+            dealHand();
+        }
+        else {
+            errorMessage.innerHTML = 'Not enough Cash';
+        }
+    }
 }
 
 // Deal hand
@@ -151,16 +170,17 @@ function dealHand() {
     // Deal 2 cards to the dealer and player
     for (let i = 0; i < 2; i++) {
         setTimeout(() => {
-            game.hands[0].push(game.shoe.pop());
+            hands[0].push(shoe.pop());
             drawCards();
         }, i * options.dealerSpeed * 2);
         setTimeout(() => {
-            game.dealer.push(game.shoe.pop());
+            dealer.push(shoe.pop());
             drawCards();
             // After dealing cards, check for blackjack
             if (i === 1) {
                 setTimeout(() => {
                     peak();
+                    phase = 'player';
                 }, 100); // Small delay to ensure card is drawn
             }
         }, i * options.dealerSpeed * 2 + options.dealerSpeed);
@@ -169,12 +189,12 @@ function dealHand() {
 
 function peak() {
     // Offer insurance
-    if (options.insurance && game.dealer[1][0] === 'A') {
+    if (options.insurance && dealer[1][0] === 'A') {
         setTimeout(() => {
             if (confirm('Would you like insurance?')) {
-                if (game.cash >= Math.trunc(game.bets[game.activeHand] / 2)) {
-                    game.insured = Math.trunc(game.bets[game.activeHand] / 2);
-                    game.cash -= Math.trunc(game.bets[game.activeHand] / 2);
+                if (cash >= Math.trunc(bets[activeHand] / 2)) {
+                    insured = Math.trunc(bets[activeHand] / 2);
+                    cash -= Math.trunc(bets[activeHand] / 2);
                     drawCash();
                     drawCards();
                 } else {
@@ -191,33 +211,34 @@ function peak() {
 function continuePeak() {
     if (options.dealerPeak === true) {
         // If 10 or ace showing
-        if (['A', 'K', 'Q', 'J', 'T'].includes(game.dealer[1][0])) {
+        if (['A', 'K', 'Q', 'J', 'T'].includes(dealer[1][0])) {
             // If blackjack
-            if (getTotal(game.dealer).length === 2 && getTotal(game.dealer)[1] === 21) {
+            if (getTotal(dealer).length === 2 && getTotal(dealer)[1] === 21) {
                 console.log('Red light');
-                game.phase = 'dealer';
+                phase = 'dealer';
                 dealersTurn();
             } else {
                 console.log('Green light');
-                game.insured = 0;
+                insured = 0;
                 drawCards();
-                game.phase = 'player';
+                phase = 'player';
             }
         } else {
-            game.phase = 'player';
+            phase = 'player';
         }
     } else {
-        game.phase = 'player';
+        phase = 'player';
     }
     // Check for player blackjack
-    const playerTotal = getTotal(game.hands[0]);
-    if (game.phase === 'player' && playerTotal.length === 2 && playerTotal[1] === 21) {
-        game.phase = 'dealer';
+    const playerTotal = getTotal(hands[0]);
+    if (phase === 'player' && playerTotal.length === 2 && playerTotal[1] === 21) {
+        phase = 'dealer';
         dealersTurn();
     }
 }
 
 function drawCards() {
+    console.log(hands);
     // Draw dealer's cards
     let d = document.getElementById('dealer');
     if (!d) {
@@ -225,17 +246,20 @@ function drawCards() {
         d.id = 'dealer';
         document.getElementById('game').appendChild(d);
     }
-    if (game.phase === 'dealer' || game.phase === 'bet') {
-        d.innerHTML = 'Dealer: ' + game.dealer + ' Total: ' + getTotal(game.dealer);
+    if (phase === 'dealer' || phase === 'bet') {
+        d.innerHTML = 'Dealer: ' + dealer
+        if (options.showHandTotals) {
+            d.innerHTML += ' Total: ' + getTotal(dealer);
+        }
     }
     else {
         d.innerHTML = 'Dealer: ';
-        for (let i = 0; i < game.dealer.length; i++) {
+        for (let i = 0; i < dealer.length; i++) {
             if (i === 0) {
                 d.innerHTML += 'XX,';
             }
             else {
-                d.innerHTML += game.dealer[i];
+                d.innerHTML += dealer[i];
             }
         }
     }
@@ -247,15 +271,17 @@ function drawCards() {
         document.getElementById('game').appendChild(p);
     }
     p.innerHTML = 'Player: ';
-    for (let i = 0; i < game.hands.length; i++) {
-        p.innerHTML += game.hands[i];
-        p.innerHTML += ' Total: ' + getTotal(game.hands[i])
-        p.innerHTML += ' Bet: ' + game.bets[i] + ' | '
+    for (let i = 0; i < hands.length; i++) {
+        p.innerHTML += hands[i];
+        if (options.showHandTotals) {
+            p.innerHTML += ' Total: ' + getTotal(hands[i]);
+        }
+        p.innerHTML += ' Bet: ' + bets[i] + ' | ';
     }
-    if (game.insured !== 0) {
-        p.innerHTML += 'Insurance bet: ' + game.insured + ' | '
+    if (insured !== 0) {
+        p.innerHTML += 'Insurance bet: ' + insured + ' | ';
     }
-    p.innerHTML += 'Active Hand: ' + game.activeHand;
+    p.innerHTML += 'Active Hand: ' + activeHand;
 }
 
 // Return total value of hand as an array with 1 or 2 values
@@ -294,11 +320,23 @@ function drawButtons() {
     hitButton.innerHTML = 'Hit';
     document.getElementById('game').appendChild(hitButton);
     hitButton.addEventListener('click', hit);
+    // Hit keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.hitKey) {
+            hit();
+        }
+    });
     // Create stand button
     const standButton = document.createElement('button');
     standButton.innerHTML = 'Stand';
     document.getElementById('game').appendChild(standButton);
     standButton.addEventListener('click', nextHand);
+    // Stand keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.standKey) {
+            nextHand();
+        }
+    });
     // Create surrender button
     const surrenderButton = document.createElement('button');
     surrenderButton.innerHTML = 'Surrender';
@@ -309,22 +347,34 @@ function drawButtons() {
     doubleButton.innerHTML = 'Double';
     document.getElementById('game').appendChild(doubleButton);
     doubleButton.addEventListener('click', double);
+    // Double keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.doubleKey) {
+            double();
+        }
+    });
     // Create split button
     const splitButton = document.createElement('button');
     splitButton.innerHTML = 'Split';
     document.getElementById('game').appendChild(splitButton);
     splitButton.addEventListener('click', split);
+    // Split keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.splitKey) {
+            split();
+        }
+    });
 }
 
 // If it's the player's turn, hit
 function hit() {
-    if (game.phase === 'player') {
-        game.hands[game.activeHand].push(game.shoe.pop());
+    if (phase === 'player') {
+        hands[activeHand].push(shoe.pop());
         drawCards();
-        const handTotal = getTotal(game.hands[game.activeHand]);
+        const handTotal = getTotal(hands[activeHand]);
         // If hand busted, move to next hand, or move to dealer turn
         if (handTotal[0] > 21) {
-            game.bets[game.activeHand] = 0;
+            bets[activeHand] = 0;
             nextHand();
         }
         // If hand is 21, go to next hand, don't allow another hit
@@ -336,14 +386,14 @@ function hit() {
 
 // If player has more hands to play, move to next hand, otherwise start dealer's turn
 function nextHand() {
-    if (game.phase === 'player') {
+    if (phase === 'player') {
         // If hand busted, take bet
-        if (getTotal(game.hands[game.activeHand])[0] > 21) {
-            game.bets[game.activeHand] = 0;
+        if (getTotal(hands[activeHand])[0] > 21) {
+            bets[activeHand] = 0;
         }
         // If no more hands to play
-        if (game.hands.length === game.activeHand + 1) {
-            game.phase = 'dealer';
+        if (hands.length === activeHand + 1) {
+            phase = 'dealer';
             drawCash();
             drawCards();
             dealersTurn();
@@ -351,14 +401,14 @@ function nextHand() {
         // If more hands to play
         else {
             // If player split and their next hand is 21
-            const playerTotal = getTotal(game.hands[game.activeHand + 1]);
+            const playerTotal = getTotal(hands[activeHand + 1]);
             if (playerTotal.length === 2 && playerTotal[1] === 21) {
-                game.phase = 'dealer';
+                phase = 'dealer';
                 drawCash();
                 drawCards();
                 dealersTurn();
             }
-            game.activeHand += 1;
+            activeHand += 1;
             drawCash();
             drawCards();
         }
@@ -367,66 +417,74 @@ function nextHand() {
 
 // Double bet and deal card
 function double() {
-    if (game.phase === 'player') {
-        if (game.hands[game.activeHand].length === 2) {
-            if (game.cash >= game.bets[game.activeHand]) {
-                // Take cash
-                game.cash -= game.bets[game.activeHand];
-                // Double bet
-                game.bets[game.activeHand] = game.bets[game.activeHand] * 2;
-                // Deal card
-                game.hands[game.activeHand].push(game.shoe.pop());
-                nextHand();
-            }
-            else {
-                alert("You don't have enough chips to double your bet.")
-            }
+    if (phase === 'player') {
+        // If doubleAfterSplit isn't allowed and player already has more than one hand
+        if (options.doubleAfterSplit === false && hands.length !== 1) {
+            alert("You can't double after splitting. You can change this rule in the settings.")
         }
         else {
-            alert("You can only double 2-card hands.")
+            if (hands[activeHand].length === 2) {
+                if (cash >= bets[activeHand]) {
+                    // Take cash
+                    cash -= bets[activeHand];
+                    // Double bet
+                    bets[activeHand] = bets[activeHand] * 2;
+                    // Deal card
+                    hands[activeHand].push(shoe.pop());
+                    nextHand();
+                }
+                else {
+                    alert("You don't have enough chips to double your bet.")
+                }
+            }
+            else {
+                alert("You can only double 2-card hands.")
+            }
         }
     }
 }
 
 // Split hand
 function split() {
-    if (game.phase === 'player') {
+    if (phase === 'player') {
         // If the current hand has 2 cards and the values are the same
-        if (game.hands[game.activeHand].length === 2 && 
-        (game.hands[game.activeHand][0][0] === game.hands[game.activeHand][1][0] ||
-        ((game.hands[game.activeHand][0][0] === 'T' || game.hands[game.activeHand][0][0] === 'J' ||
-        game.hands[game.activeHand][0][0] === 'Q' || game.hands[game.activeHand][0][0] === 'K') &&
-        (game.hands[game.activeHand][1][0] === 'T' || game.hands[game.activeHand][1][0] === 'J' ||
-        game.hands[game.activeHand][1][0] === 'Q' || game.hands[game.activeHand][1][0] === 'K'))
+        if (hands[activeHand].length === 2 && 
+        (hands[activeHand][0][0] === hands[activeHand][1][0] ||
+        ((hands[activeHand][0][0] === 'T' || hands[activeHand][0][0] === 'J' ||
+        hands[activeHand][0][0] === 'Q' || hands[activeHand][0][0] === 'K') &&
+        (hands[activeHand][1][0] === 'T' || hands[activeHand][1][0] === 'J' ||
+        hands[activeHand][1][0] === 'Q' || hands[activeHand][1][0] === 'K'))
         )) {
-            if (game.hands.length === 4) {
+            if (hands.length === 4) {
                 alert("You're only allowed to split 3 times for a total of 4 hands.");
             }
             else {
-                if (game.cash >= game.bets[game.activeHand]) {
-                    // Create a new hand with with one of the cards
-                    game.hands.push([game.hands[game.activeHand][0]]);
-                    game.hands[game.activeHand].shift();
+                if (cash >= bets[activeHand]) {
+                    // Create a new hand with one of the cards
+                    hands.splice(activeHand + 1, 0,[hands[activeHand][0]]);
+                    hands[activeHand].shift();
                     // Add bet and subtract cash
-                    game.bets.push(game.bets[game.activeHand]);
-                    game.cash -= game.bets[game.activeHand];
+                    bets.push(bets[activeHand]);
+                    cash -= bets[activeHand];
                     drawCash();
                     drawCards();
                     // Deal 2 more cards
+                    phase = 'animation';
                     setTimeout(() => {
-                        game.hands[game.activeHand].push(game.shoe.pop());
+                        hands[activeHand].push(shoe.pop());
                         drawCards();
                     }, options.dealerSpeed);
                     setTimeout(() => {
-                        game.hands[game.activeHand + 1].push(game.shoe.pop());
+                        hands[activeHand + 1].push(shoe.pop());
+                        phase = 'player';
                         drawCards();
                         // If aces were split and acesSplit1Card is on, start dealer's turn
-                        if (game.splitAces1Card && game.hands[game.activeHand][0][0] === 'A') {
+                        if (options.splitAces1Card && hands[activeHand][0][0] === 'A') {
                             dealersTurn();
                             return;
                         }
                         // Check for 21
-                        const playerTotal = getTotal(game.hands[game.activeHand]);
+                        const playerTotal = getTotal(hands[activeHand]);
                         if (playerTotal.length === 2 && playerTotal[1] === 21) {
                             nextHand();
                         }
@@ -445,57 +503,65 @@ function split() {
 
 // Check if it's possible to surrender hand
 function surrender() {
-    if (game.phase === 'player') {
+    if (phase === 'player') {
         if (options.surrender === 'notAllowed') {
             alert("Surrender isn't allowed. You can change this rule in the settings.");
         }
-        else if (options.surrender === 'nonAces') {
-            if (game.dealer[1][0] === 'A') {
-                alert("You can't surrender when the dealer's upcard is an Ace. You can change this rule in the settings.");
+        if (hands.length === 1 && hands[0].length === 2) {
+            if (options.surrender === 'nonAces') {
+                if (dealer[1][0] === 'A') {
+                    alert("You can't surrender when the dealer's upcard is an Ace. You can change this rule in the settings.");
+                }
+                else {
+                    paySurrender();
+                }
             }
-            else {
+            else if (options.surrender === 'allCards') {
                 paySurrender();
             }
         }
-        else if (options.surrender === 'allCards') {
-            paySurrender();
+        else {
+            alert("You can only surrender at the beginning of your turn.")
         }
     }
 }
 
 // Surrender hand
 function paySurrender() {
-    // Give half of bet back (rounded down), set bet to 0, next hand
-    game.cash += Math.trunc(game.bets[game.activeHand] / 2);
-    game.bets[game.activeHand] = 0;
-    nextHand();
+    // Give half of bet back (rounded down), set bet to half, next hand
+    cash += Math.trunc(bets[activeHand] / 2);
+    bets[activeHand] = Math.trunc(bets[activeHand] / 2);
+    phase = 'bet';
+    drawCash();
+    drawCards();
+    placeBet();
 }
 
 // Dealer's turn
 function dealersTurn() {
     // Check for dealer blackjack and pay insurance
-    if (getTotal(game.dealer).length === 2 && getTotal(game.dealer)[1] === 21) {
-        if (game.insured != 0) {
+    if (getTotal(dealer).length === 2 && getTotal(dealer)[1] === 21) {
+        if (insured != 0) {
             // pay 2:1 insurance plus original insurance bet back
-            game.cash += game.insured * 3;
-            game.insured = game.insured * 3;
+            cash += insured * 3;
+            insured = insured * 3;
             drawCards();
         }
     }
     // Check for player blackjack
-    if (game.hands.length === 1 && game.hands[0].length === 2 && getTotal(game.hands[0])[1] === 21) {
+    if (hands.length === 1 && hands[0].length === 2 && getTotal(hands[0])[1] === 21) {
         processBets();
         return;
     }
     // Check if all player's hands busted
     let playerHandsBusted = true;
-    for (let i = 0; i < game.bets.length; i++) {
-        if (game.bets[i] != 0) {
+    for (let i = 0; i < bets.length; i++) {
+        if (bets[i] != 0) {
             playerHandsBusted = false;
         }
     }
     if (!playerHandsBusted) {
-        let dealerHand = [...game.dealer];
+        let dealerHand = [...dealer];
 
         function dealerHit() {
             let total = getTotal(dealerHand);
@@ -505,9 +571,9 @@ function dealersTurn() {
                     processBets();
                 }
                 else {
-                    dealerHand.push(game.shoe.pop());
+                    dealerHand.push(shoe.pop());
                     setTimeout(() => {
-                        game.dealer.push(dealerHand[game.dealer.length]);
+                        dealer.push(dealerHand[dealer.length]);
                         drawCards();
                         dealerHit();
                     }, options.dealerSpeed);
@@ -520,9 +586,9 @@ function dealersTurn() {
                     processBets();
                 }
                 else {
-                    dealerHand.push(game.shoe.pop());
+                    dealerHand.push(shoe.pop());
                     setTimeout(() => {
-                        game.dealer.push(dealerHand[game.dealer.length]);
+                        dealer.push(dealerHand[dealer.length]);
                         drawCards();
                         dealerHit();
                     }, options.dealerSpeed);
@@ -538,7 +604,7 @@ function dealersTurn() {
 
 function processBets() {
     // Convert dealer total to one number
-    let dealerTotal = getTotal(game.dealer);
+    let dealerTotal = getTotal(dealer);
     if (dealerTotal.length === 2) {
         dealerTotal = dealerTotal[1];
     } else {
@@ -546,13 +612,13 @@ function processBets() {
     }
     // If dealer has blackjack, take all bets except for player blackjacks
     dealerBlackjack = false;
-    if (dealerTotal === 21 && game.dealer.length === 2) {
+    if (dealerTotal === 21 && dealer.length === 2) {
         dealerBlackjack = true;
     }
-    for (let hand = 0; hand < game.hands.length; hand++) {
-        if (game.bets[hand] != 0) {
+    for (let hand = 0; hand < hands.length; hand++) {
+        if (bets[hand] != 0) {
             // Convert hand total to one number
-            let handTotal = getTotal(game.hands[hand]);
+            let handTotal = getTotal(hands[hand]);
             if (handTotal.length === 2) {
                 handTotal = handTotal[1];
             }
@@ -560,44 +626,44 @@ function processBets() {
                 handTotal = handTotal[0];
             }
             // If player has blackjack (and not 21 after splitting)
-            if (handTotal === 21 && game.hands[hand].length === 2 && game.hands.length === 1) {
+            if (handTotal === 21 && hands[hand].length === 2 && hands.length === 1) {
                 if (dealerBlackjack) {
-                    game.cash += game.bets[hand];
+                    cash += bets[hand];
                 }
                 else {
-                    game.cash += game.bets[hand] * 2.5;
-                    game.bets[hand] = game.bets[hand] * 2.5;
+                    cash += bets[hand] * 2.5;
+                    bets[hand] = bets[hand] * 2.5;
                 }
             }
             // If dealer has blackjack
             else if (dealerBlackjack) {
-                game.bets[hand] = 0;
+                bets[hand] = 0;
             }
             // If dealer busted
             else if (dealerTotal > 21) {
-                game.cash += game.bets[hand] * 2;
-                game.bets[hand] = game.bets[hand] * 2;
+                cash += bets[hand] * 2;
+                bets[hand] = bets[hand] * 2;
             }
             // If player busted
             else if (handTotal > 21) {
-                game.bets[hand] = 0;
+                bets[hand] = 0;
             }
             // Less than dealer
             else if (handTotal < dealerTotal) {
-                game.bets[hand] = 0;
+                bets[hand] = 0;
             }
             //Tied with dealer
             else if (handTotal === dealerTotal) {
-                game.cash += game.bets[hand];
+                cash += bets[hand];
             }
             // Greater than dealer
             else if (handTotal > dealerTotal) {
-                game.cash += game.bets[hand] * 2;
-                game.bets[hand] = game.bets[hand] * 2;
+                cash += bets[hand] * 2;
+                bets[hand] = bets[hand] * 2;
             }
         } 
     }
-    game.phase = 'bet';
+    phase = 'bet';
     drawCash();
     drawCards();
     placeBet();
