@@ -26,6 +26,7 @@ let options = {
     standKey: 'Enter',
     doubleKey: 'd',
     splitKey: 's',
+    surrenderKey: 'u',
 };
 
 // Once HTML page has loaded execute main function
@@ -35,24 +36,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Main function
 function main() {
-    // Display current cash amount
-    drawCash();
-    // Shuffle cards
     shoe = shuffle(options.numberOfDecks);
+    drawGame();
     drawButtons();
-    // Take bet
     placeBet();
-}
-
-// Display current cash amount
-function drawCash() {
-    let p = document.getElementById('cash');
-    if (!p) {
-        p = document.createElement('p');
-        p.id = 'cash';
-        document.getElementById('game').appendChild(p);
-    }  
-    p.innerHTML = 'Cash: ' + cash;
 }
 
 // Create a standard 52 card deck
@@ -112,13 +99,8 @@ function placeBet() {
     button.id = 'betButton';
     button.innerHTML = 'Bet';
     document.getElementById('game').appendChild(button);
-    // Create error message p tag
-    const errorMessage = document.createElement('p');
-    errorMessage.id = 'errorMessage'
-    document.getElementById('game').appendChild(errorMessage);
     button.addEventListener('click', betClicked);
     input.addEventListener('keypress', function(event) {
-        console.log(event)
         if (event.key === 'Enter') {
             betClicked();
         }
@@ -128,7 +110,6 @@ function placeBet() {
 function betClicked() {
     const input = document.getElementById('betValue');
     const button = document.getElementById('betButton');
-    const errorMessage = document.getElementById('errorMessage');
     const shuffling = document.getElementById('shuffling');
     // Get bet value and parseInt
     let betValue = input.value;
@@ -148,19 +129,18 @@ function betClicked() {
             // Remove text field and button
             input.remove();
             button.remove();
-            errorMessage.remove();
             if (shuffling) {
                 shuffling.remove();
             }
             // Deduct cash
             cash -= betValue;
-            drawCash();
+            drawGame();
             // Deal hand
             phase = 'animation';
             dealHand();
         }
         else {
-            errorMessage.innerHTML = 'Not enough Cash';
+            alert('Not enough cash.')
         }
     }
 }
@@ -171,11 +151,11 @@ function dealHand() {
     for (let i = 0; i < 2; i++) {
         setTimeout(() => {
             hands[0].push(shoe.pop());
-            drawCards();
+            drawGame();
         }, i * options.dealerSpeed * 2);
         setTimeout(() => {
             dealer.push(shoe.pop());
-            drawCards();
+            drawGame();
             // After dealing cards, check for blackjack
             if (i === 1) {
                 setTimeout(() => {
@@ -195,8 +175,7 @@ function peak() {
                 if (cash >= Math.trunc(bets[activeHand] / 2)) {
                     insured = Math.trunc(bets[activeHand] / 2);
                     cash -= Math.trunc(bets[activeHand] / 2);
-                    drawCash();
-                    drawCards();
+                    drawGame();
                 } else {
                     alert("You don't have enough chips to buy insurance.");
                 }
@@ -220,7 +199,7 @@ function continuePeak() {
             } else {
                 console.log('Green light');
                 insured = 0;
-                drawCards();
+                drawGame();
                 phase = 'player';
             }
         } else {
@@ -237,8 +216,15 @@ function continuePeak() {
     }
 }
 
-function drawCards() {
-    console.log(hands);
+function drawGame() {
+    // Display current cash amount
+    let c = document.getElementById('cash');
+    if (!c) {
+        c = document.createElement('p');
+        c.id = 'cash';
+        document.getElementById('game').appendChild(c);
+    }  
+    c.innerHTML = 'Cash: ' + cash;
     // Draw dealer's cards
     let d = document.getElementById('dealer');
     if (!d) {
@@ -342,6 +328,12 @@ function drawButtons() {
     surrenderButton.innerHTML = 'Surrender';
     document.getElementById('game').appendChild(surrenderButton);
     surrenderButton.addEventListener('click', surrender);
+    // Double keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.surrenderKey) {
+            surrender();
+        }
+    });
     // Create double button
     const doubleButton = document.createElement('button');
     doubleButton.innerHTML = 'Double';
@@ -370,7 +362,7 @@ function drawButtons() {
 function hit() {
     if (phase === 'player') {
         hands[activeHand].push(shoe.pop());
-        drawCards();
+        drawGame();
         const handTotal = getTotal(hands[activeHand]);
         // If hand busted, move to next hand, or move to dealer turn
         if (handTotal[0] > 21) {
@@ -394,8 +386,7 @@ function nextHand() {
         // If no more hands to play
         if (hands.length === activeHand + 1) {
             phase = 'dealer';
-            drawCash();
-            drawCards();
+            drawGame();
             dealersTurn();
         }
         // If more hands to play
@@ -404,13 +395,11 @@ function nextHand() {
             const playerTotal = getTotal(hands[activeHand + 1]);
             if (playerTotal.length === 2 && playerTotal[1] === 21) {
                 phase = 'dealer';
-                drawCash();
-                drawCards();
+                drawGame();
                 dealersTurn();
             }
             activeHand += 1;
-            drawCash();
-            drawCards();
+            drawGame();
         }
     }
 }
@@ -466,18 +455,17 @@ function split() {
                     // Add bet and subtract cash
                     bets.push(bets[activeHand]);
                     cash -= bets[activeHand];
-                    drawCash();
-                    drawCards();
+                    drawGame();
                     // Deal 2 more cards
                     phase = 'animation';
                     setTimeout(() => {
                         hands[activeHand].push(shoe.pop());
-                        drawCards();
+                        drawGame();
                     }, options.dealerSpeed);
                     setTimeout(() => {
                         hands[activeHand + 1].push(shoe.pop());
                         phase = 'player';
-                        drawCards();
+                        drawGame();
                         // If aces were split and acesSplit1Card is on, start dealer's turn
                         if (options.splitAces1Card && hands[activeHand][0][0] === 'A') {
                             dealersTurn();
@@ -507,21 +495,23 @@ function surrender() {
         if (options.surrender === 'notAllowed') {
             alert("Surrender isn't allowed. You can change this rule in the settings.");
         }
-        if (hands.length === 1 && hands[0].length === 2) {
-            if (options.surrender === 'nonAces') {
-                if (dealer[1][0] === 'A') {
-                    alert("You can't surrender when the dealer's upcard is an Ace. You can change this rule in the settings.");
+        else {
+            if (hands.length === 1 && hands[0].length === 2) {
+                if (options.surrender === 'nonAces') {
+                    if (dealer[1][0] === 'A') {
+                        alert("You can't surrender when the dealer's upcard is an Ace. You can change this rule in the settings.");
+                    }
+                    else {
+                        paySurrender();
+                    }
                 }
-                else {
+                else if (options.surrender === 'allCards') {
                     paySurrender();
                 }
             }
-            else if (options.surrender === 'allCards') {
-                paySurrender();
+            else {
+                alert("You can only surrender at the beginning of your turn.")
             }
-        }
-        else {
-            alert("You can only surrender at the beginning of your turn.")
         }
     }
 }
@@ -532,8 +522,7 @@ function paySurrender() {
     cash += Math.trunc(bets[activeHand] / 2);
     bets[activeHand] = Math.trunc(bets[activeHand] / 2);
     phase = 'bet';
-    drawCash();
-    drawCards();
+    drawGame();
     placeBet();
 }
 
@@ -545,7 +534,7 @@ function dealersTurn() {
             // pay 2:1 insurance plus original insurance bet back
             cash += insured * 3;
             insured = insured * 3;
-            drawCards();
+            drawGame();
         }
     }
     // Check for player blackjack
@@ -574,7 +563,7 @@ function dealersTurn() {
                     dealerHand.push(shoe.pop());
                     setTimeout(() => {
                         dealer.push(dealerHand[dealer.length]);
-                        drawCards();
+                        drawGame();
                         dealerHit();
                     }, options.dealerSpeed);
                 }
@@ -589,7 +578,7 @@ function dealersTurn() {
                     dealerHand.push(shoe.pop());
                     setTimeout(() => {
                         dealer.push(dealerHand[dealer.length]);
-                        drawCards();
+                        drawGame();
                         dealerHit();
                     }, options.dealerSpeed);
                 }
@@ -664,7 +653,6 @@ function processBets() {
         } 
     }
     phase = 'bet';
-    drawCash();
-    drawCards();
+    drawGame();
     placeBet();
 }
