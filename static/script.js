@@ -4,10 +4,11 @@ let dealer = [];
 let hands = [ [] ];
 let bets = [];
 let lastBet = null;
-let cash = 1000;
+let cash = 100;
 let phase = 'bet'; // bet, player, dealer, animation
 let activeHand = 0;
 let insured = 0;
+let images = {};
 
 // Store all options in a global variable
 let options = {
@@ -21,7 +22,7 @@ let options = {
     insurance: false,
     splitAces1Card: true,
     showHandTotals: true,
-    dealerSpeed: 0, // in milliseconds
+    dealerSpeed: 500, // in milliseconds
     hitKey: ' ',
     standKey: 'Enter',
     doubleKey: 'd',
@@ -29,17 +30,397 @@ let options = {
     surrenderKey: 'u',
 };
 
-// Once HTML page has loaded execute main function
-document.addEventListener('DOMContentLoaded', function() {  
-    main();
+// Once HTML page has loaded, preload Images
+document.addEventListener('DOMContentLoaded', function() { 
+    preloadImages(); 
+});
+
+// If window is resized, redraw game
+window.addEventListener('resize', function() {
+    drawGame();
 });
 
 // Main function
 function main() {
     shoe = shuffle(options.numberOfDecks);
     drawGame();
-    drawButtons();
-    placeBet();
+}
+
+// Load image
+function loadImage(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Failed to load image'));
+    });
+}
+
+// Pre-load all images
+async function preloadImages() {
+    const fileNames = createDeck();
+    const otherFileNames = ['chips', 'settings', 'red'];
+    for (let i = 0; i < otherFileNames.length; i++) {
+        fileNames.push(otherFileNames[i]);
+    }
+    const promises = fileNames.map(card => {
+        return loadImage(`static/images/${card}.png`).then(img => {
+            images[card] = img;
+        });
+    });
+
+    try {
+        await Promise.all(promises);
+        main();
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function drawSettings(gameSize) {
+    document.getElementById('game').innerHTML = '';
+    title = document.createElement('span');
+    title.innerHTML = 'Settings';
+    title.style.fontSize = (gameSize / 15) + 'px';
+    document.getElementById('game').appendChild(title);
+
+
+    // TODO: Add all settings
+
+
+}
+
+function drawGame() {
+    console.log(phase);
+    const container = document.getElementById('container');
+    // If game div exists, delete everything in it, else create it
+    let game = document.getElementById('game');
+    if (game) {
+        game.innerHTML = '';
+    }
+    else {
+        game = document.createElement('div');
+        game.id = 'game';
+        game.style.textAlign = 'center';
+        container.appendChild(game);
+    }
+    // Make game div a square using the smallest of container's dimensions
+    let gameSize;
+    if (container.clientWidth >= container.clientHeight) {
+        gameSize = container.clientHeight;
+    } else {
+        gameSize = container.clientWidth;
+    }
+    game.style.width = gameSize + 'px';
+    game.style.height = gameSize + 'px';
+    game.style.position = 'relative';
+    document.getElementById('container').appendChild(game);
+    // Make a header div
+    const headerDiv = document.createElement('div');
+    headerDiv.id = 'headerDiv';
+    document.getElementById('game').appendChild(headerDiv);
+    // Draw chips icon
+    const iconSize = gameSize / 15;
+    const iconMargin = gameSize / 150;
+    const chipsIcon = document.getElementById('chipsIcon');
+    if (!chipsIcon) {
+        images['chips'].id = 'chipsIcon'
+        images['chips'].height = iconSize;
+        images['chips'].style.position = 'absolute';
+        images['chips'].style.top = iconMargin + 'px';
+        images['chips'].style.left = iconMargin + 'px';
+        headerDiv.appendChild(images['chips']);
+    }
+    // Draw chips value
+    chipsValue = document.getElementById('chipsValue')
+    if (!chipsValue) {
+        chipsValue = document.createElement('span');
+        chipsValue.id = 'chipsValue';
+        chipsValue.style.fontSize = iconSize + 'px';
+        chipsValue.style.position = 'absolute';
+        chipsValue.style.left = (iconMargin + iconSize) + 'px';
+        headerDiv.appendChild(chipsValue);
+    }
+    chipsValue.innerHTML = cash;
+    // Draw settings icon
+    const settingsIcon = document.getElementById('settingsIcon');
+    if (!settingsIcon) {
+        images['settings'].id = 'settingsIcon';
+        images['settings'].height = iconSize;
+        images['settings'].style.position = 'absolute';
+        images['settings'].style.top = (gameSize / 150) + 'px';
+        images['settings'].style.right = iconMargin + 'px';
+        images['settings'].addEventListener('click', function() {
+            drawSettings(gameSize);
+        });
+        headerDiv.appendChild(images['settings']);
+    }
+    // Draw dealer's hand
+    const cardWidth = gameSize / 6;
+    let dealerDiv = document.getElementById('dealer');
+    if(dealerDiv) {
+        dealerDiv.innerHTML = '';
+    }
+    else {
+        dealerDiv = document.createElement('div');
+        dealerDiv.id = 'dealer';
+        document.getElementById('game').appendChild(dealerDiv);
+    }
+    // Determine whether to show dealer's hole card
+    let showHoleCard = false;
+    if (phase === 'dealer' || phase === 'bet') {
+        showHoleCard = true;
+    }
+    else {
+        showHoleCard = false;
+    }
+    // Draw dealer total
+    if (options.showHandTotals && showHoleCard && lastBet) {
+        const dealerTotal = document.createElement('span');
+        dealerTotal.innerHTML = getTotal(dealer);
+        dealerTotal.style.fontSize = iconSize + 'px';
+        document.getElementById('dealer').appendChild(dealerTotal);
+    }
+    // Draw dealer's cards
+    for (let c = 0; c < dealer.length; c++) {
+        let card = dealer[c];
+        if (!showHoleCard && c === 0) {
+            card = 'red';
+        }
+        images[card].width = cardWidth;
+        images[card].style.position = 'absolute';
+        images[card].style.top = (iconSize + iconMargin) + 'px';
+        images[card].style.left = (gameSize / 2 - cardWidth * 5/8 + cardWidth / 4 * c) + 'px';
+        document.getElementById('dealer').appendChild(images[card]);
+    }
+    
+
+    let handLocations = [];
+    // Calculate player hand locations
+    if (hands.length === 1) {
+        handLocations = [gameSize / 2  - cardWidth * 5/8];
+    }
+
+
+    // Draw player hand(s)
+
+
+
+
+
+
+
+
+
+
+    // // Display current cash amount
+    // let c = document.getElementById('cash');
+    // if (!c) {
+    //     c = document.createElement('p');
+    //     c.id = 'cash';
+    //     document.getElementById('game').appendChild(c);
+    // }  
+    // c.innerHTML = 'Cash: ' + cash;
+    // // Draw dealer's cards
+    // let d = document.getElementById('dealer');
+    // if (!d) {
+    //     d = document.createElement('p');
+    //     d.id = 'dealer';
+    //     document.getElementById('game').appendChild(d);
+    // }
+    // if (phase === 'dealer' || phase === 'bet') {
+    //     d.innerHTML = 'Dealer: ' + dealer
+    //     if (options.showHandTotals) {
+    //         d.innerHTML += ' Total: ' + getTotal(dealer);
+    //     }
+    // }
+    // else {
+    //     d.innerHTML = 'Dealer: ';
+    //     for (let i = 0; i < dealer.length; i++) {
+    //         if (i === 0) {
+    //             d.innerHTML += 'XX,';
+    //         }
+    //         else {
+    //             d.innerHTML += dealer[i];
+    //         }
+    //     }
+    // }
+
+    // Draw player's cards
+    let p = document.getElementById('player');
+    if (!p) {
+        p = document.createElement('p');
+        p.id = 'player';
+        p.style.paddingTop = '500px'
+        document.getElementById('game').appendChild(p);
+    }
+    p.innerHTML = 'Player: ';
+    for (let i = 0; i < hands.length; i++) {
+        p.innerHTML += hands[i];
+        if (options.showHandTotals) {
+            p.innerHTML += ' Total: ' + getTotal(hands[i]);
+        }
+        p.innerHTML += ' Bet: ' + bets[i] + ' | ';
+    }
+    if (insured !== 0) {
+        p.innerHTML += 'Insurance bet: ' + insured + ' | ';
+    }
+    p.innerHTML += 'Active Hand: ' + activeHand;
+
+
+
+
+
+
+    // Deleting these at the top of this function BUGGG
+
+    // drawBet or drawButtons if they haven't been drawn already
+    if (phase === 'bet') {
+        const betDrawn = document.getElementById('betValue');
+        if (!betDrawn) {
+            // TODO: Remove buttons div (once it exists) and update id above
+            drawBet();
+        }
+    }
+    else {
+        const buttonsDrawn = document.getElementById('hit');
+        console.log(buttonsDrawn)
+        if (!buttonsDrawn) {
+            // TODO Remove bet div (once is exists) and update id above
+            console.log('drawButtons')
+            drawButtons();
+        }
+    }
+}
+
+// Take bet
+function drawBet() {
+    // If shoe is getting low, reshuffle
+    const shuffling = document.createElement('p');
+    shuffling.id = 'shuffling'
+    shuffling.innerHTML = 'Shuffling'
+    if (shoe.length < options.numberOfDecks * 52 * (1 - options.shoePenatration)) {
+        shoe = shuffle(options.numberOfDecks);
+        document.getElementById('game').appendChild(shuffling);
+    }
+    // Create bet input field
+    const input = document.createElement('input');
+    input.id = 'betValue';
+    input.type = 'number';
+    input.min = 1;
+    if (lastBet) {
+        input.value = lastBet;
+    }
+    document.getElementById('game').appendChild(input);
+    document.getElementById('betValue').focus();
+    // Create Bet button
+    const button = document.createElement('button');
+    button.id = 'betButton';
+    button.innerHTML = 'Bet';
+    document.getElementById('game').appendChild(button);
+    button.addEventListener('click', betPlaced);
+    input.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            betPlaced();
+        }
+    })
+}
+
+function betPlaced() {
+    const input = document.getElementById('betValue');
+    const button = document.getElementById('betButton');
+    const shuffling = document.getElementById('shuffling');
+    // Get bet value and parseInt
+    let betValue = input.value;
+    betValue = parseInt(betValue);
+    // Check to make sure bet is valid
+    if (Number.isInteger(betValue) && betValue > 0) {
+        if (betValue <= cash) {
+            // Clean up last hand data
+            dealer = [];
+            hands = [ [] ];
+            activeHand = 0;
+            insured = 0;
+            // Set bet
+            bets = [betValue];
+            // Save bet for next hand
+            lastBet = betValue;
+            // Remove text field and button
+            input.remove();
+            button.remove();
+            if (shuffling) {
+                shuffling.remove();
+            }
+            // Deduct cash
+            cash -= betValue;
+            // Deal hand
+            phase = 'animation';
+            dealHand();
+        }
+        else {
+            alert('Not enough cash.')
+        }
+    }
+}
+
+// Draw buttons
+function drawButtons() {
+    // Create hit button
+    const hitButton = document.createElement('button');
+    hitButton.id = 'hit';
+    hitButton.innerHTML = 'Hit';
+    document.getElementById('game').appendChild(hitButton);
+    hitButton.addEventListener('click', hit);
+    // Hit keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.hitKey) {
+            hit();
+        }
+    });
+    // Create stand button
+    const standButton = document.createElement('button');
+    standButton.innerHTML = 'Stand';
+    document.getElementById('game').appendChild(standButton);
+    standButton.addEventListener('click', nextHand);
+    // Stand keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.standKey) {
+            nextHand();
+        }
+    });
+    // Create surrender button
+    const surrenderButton = document.createElement('button');
+    surrenderButton.innerHTML = 'Surrender';
+    document.getElementById('game').appendChild(surrenderButton);
+    surrenderButton.addEventListener('click', surrender);
+    // Double keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.surrenderKey) {
+            surrender();
+        }
+    });
+    // Create double button
+    const doubleButton = document.createElement('button');
+    doubleButton.innerHTML = 'Double';
+    document.getElementById('game').appendChild(doubleButton);
+    doubleButton.addEventListener('click', double);
+    // Double keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.doubleKey) {
+            double();
+        }
+    });
+    // Create split button
+    const splitButton = document.createElement('button');
+    splitButton.innerHTML = 'Split';
+    document.getElementById('game').appendChild(splitButton);
+    splitButton.addEventListener('click', split);
+    // Split keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.splitKey) {
+            split();
+        }
+    });
 }
 
 // Create a standard 52 card deck
@@ -72,77 +453,6 @@ function shuffle(numberOfDecks) {
     // options.shoePenatration = 1;
     // decks = ['9d' ,'Ks', 'As', '5d', '8s', 'Jh', '8c', 'Ks', '8h', 'Ac', '8s', '7d', '8d'];
     return decks;
-}
-
-// Take bet
-function placeBet() {
-    // If shoe is getting low, reshuffle
-    const shuffling = document.createElement('p');
-    shuffling.id = 'shuffling'
-    shuffling.innerHTML = 'Shuffling'
-    if (shoe.length < options.numberOfDecks * 52 * (1 - options.shoePenatration)) {
-        shoe = shuffle(options.numberOfDecks);
-        document.getElementById('game').appendChild(shuffling);
-    }
-    // Create bet input field
-    const input = document.createElement('input');
-    input.id = 'betValue';
-    input.type = 'number';
-    input.min = 1;
-    if (lastBet) {
-        input.value = lastBet;
-    }
-    document.getElementById('game').appendChild(input);
-    document.getElementById('betValue').focus();
-    // Create Bet button
-    const button = document.createElement('button');
-    button.id = 'betButton';
-    button.innerHTML = 'Bet';
-    document.getElementById('game').appendChild(button);
-    button.addEventListener('click', betClicked);
-    input.addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-            betClicked();
-        }
-    })
-}
-
-function betClicked() {
-    const input = document.getElementById('betValue');
-    const button = document.getElementById('betButton');
-    const shuffling = document.getElementById('shuffling');
-    // Get bet value and parseInt
-    let betValue = input.value;
-    betValue = parseInt(betValue);
-    // Check to make sure bet is valid
-    if (Number.isInteger(betValue) && betValue > 0) {
-        if (betValue <= cash) {
-            // Clean up last hand data
-            dealer = [];
-            hands = [ [] ];
-            activeHand = 0;
-            insured = 0;
-            // Set bet
-            bets = [betValue];
-            // Save bet for next hand
-            lastBet = betValue;
-            // Remove text field and button
-            input.remove();
-            button.remove();
-            if (shuffling) {
-                shuffling.remove();
-            }
-            // Deduct cash
-            cash -= betValue;
-            drawGame();
-            // Deal hand
-            phase = 'animation';
-            dealHand();
-        }
-        else {
-            alert('Not enough cash.')
-        }
-    }
 }
 
 // Deal hand
@@ -216,60 +526,6 @@ function continuePeak() {
     }
 }
 
-function drawGame() {
-    // Display current cash amount
-    let c = document.getElementById('cash');
-    if (!c) {
-        c = document.createElement('p');
-        c.id = 'cash';
-        document.getElementById('game').appendChild(c);
-    }  
-    c.innerHTML = 'Cash: ' + cash;
-    // Draw dealer's cards
-    let d = document.getElementById('dealer');
-    if (!d) {
-        d = document.createElement('p');
-        d.id = 'dealer';
-        document.getElementById('game').appendChild(d);
-    }
-    if (phase === 'dealer' || phase === 'bet') {
-        d.innerHTML = 'Dealer: ' + dealer
-        if (options.showHandTotals) {
-            d.innerHTML += ' Total: ' + getTotal(dealer);
-        }
-    }
-    else {
-        d.innerHTML = 'Dealer: ';
-        for (let i = 0; i < dealer.length; i++) {
-            if (i === 0) {
-                d.innerHTML += 'XX,';
-            }
-            else {
-                d.innerHTML += dealer[i];
-            }
-        }
-    }
-    // Draw player's cards
-    let p = document.getElementById('player');
-    if (!p) {
-        p = document.createElement('p');
-        p.id = 'player';
-        document.getElementById('game').appendChild(p);
-    }
-    p.innerHTML = 'Player: ';
-    for (let i = 0; i < hands.length; i++) {
-        p.innerHTML += hands[i];
-        if (options.showHandTotals) {
-            p.innerHTML += ' Total: ' + getTotal(hands[i]);
-        }
-        p.innerHTML += ' Bet: ' + bets[i] + ' | ';
-    }
-    if (insured !== 0) {
-        p.innerHTML += 'Insurance bet: ' + insured + ' | ';
-    }
-    p.innerHTML += 'Active Hand: ' + activeHand;
-}
-
 // Return total value of hand as an array with 1 or 2 values
 function getTotal(hand) {
     let total = [0];
@@ -297,65 +553,6 @@ function getTotal(hand) {
         total.pop();
     }
     return total;
-}
-
-// Draw buttons
-function drawButtons() {
-    // Create hit button
-    const hitButton = document.createElement('button');
-    hitButton.innerHTML = 'Hit';
-    document.getElementById('game').appendChild(hitButton);
-    hitButton.addEventListener('click', hit);
-    // Hit keyboard shortcut
-    addEventListener('keypress', (event) => {
-        if (event.key === options.hitKey) {
-            hit();
-        }
-    });
-    // Create stand button
-    const standButton = document.createElement('button');
-    standButton.innerHTML = 'Stand';
-    document.getElementById('game').appendChild(standButton);
-    standButton.addEventListener('click', nextHand);
-    // Stand keyboard shortcut
-    addEventListener('keypress', (event) => {
-        if (event.key === options.standKey) {
-            nextHand();
-        }
-    });
-    // Create surrender button
-    const surrenderButton = document.createElement('button');
-    surrenderButton.innerHTML = 'Surrender';
-    document.getElementById('game').appendChild(surrenderButton);
-    surrenderButton.addEventListener('click', surrender);
-    // Double keyboard shortcut
-    addEventListener('keypress', (event) => {
-        if (event.key === options.surrenderKey) {
-            surrender();
-        }
-    });
-    // Create double button
-    const doubleButton = document.createElement('button');
-    doubleButton.innerHTML = 'Double';
-    document.getElementById('game').appendChild(doubleButton);
-    doubleButton.addEventListener('click', double);
-    // Double keyboard shortcut
-    addEventListener('keypress', (event) => {
-        if (event.key === options.doubleKey) {
-            double();
-        }
-    });
-    // Create split button
-    const splitButton = document.createElement('button');
-    splitButton.innerHTML = 'Split';
-    document.getElementById('game').appendChild(splitButton);
-    splitButton.addEventListener('click', split);
-    // Split keyboard shortcut
-    addEventListener('keypress', (event) => {
-        if (event.key === options.splitKey) {
-            split();
-        }
-    });
 }
 
 // If it's the player's turn, hit
@@ -523,7 +720,7 @@ function paySurrender() {
     bets[activeHand] = Math.trunc(bets[activeHand] / 2);
     phase = 'bet';
     drawGame();
-    placeBet();
+    drawBet();
 }
 
 // Dealer's turn
@@ -654,5 +851,4 @@ function processBets() {
     }
     phase = 'bet';
     drawGame();
-    placeBet();
 }
