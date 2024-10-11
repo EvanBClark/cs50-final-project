@@ -244,12 +244,22 @@ function drawGame() {
         card.style.left = (gameSize / 2 - cardWidth * 5/8 + cardWidth / 4 * c) + 'px';
         document.getElementById('dealer').appendChild(card);
     }
-    
+
+
 
     let handLocations = [];
     // Calculate player hand locations
     if (hands.length === 1) {
         handLocations = [gameSize / 2  - cardWidth * 5/8];
+    }
+    else if (hands.length === 2) {
+        handLocations = [gameSize / 3 * 2  - cardWidth * 5/8, gameSize / 3  - cardWidth * 5/8];
+    }
+    else if (hands.length === 3) {
+        handLocations = [gameSize / 3 * 2, gameSize / 3, 0]
+    }
+    else if (hands.length === 4) {
+        handLocations = [gameSize / 4 * 3, gameSize / 4 * 2, gameSize / 4, 0]
     }
 
 
@@ -508,10 +518,10 @@ function shuffle(numberOfDecks) {
         [decks[i], decks[j]] = [decks[j], decks[i]];
     }
     // DEV ONLY
-    options.shoePenatration = 1;
-    // decks = ['2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s']
+    // decks = ['2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s'];
     // decks = ['As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As'];
-    // decks = ['9d' ,'Ks', 'As', '5d', '8s', 'Jh', '8c', 'Ks', '8h', 'Kh', '8s', 'Ah', '8d'];
+    options.shoePenatration = 1;
+    decks = ['Qh', 'Ks', '5h', '5c', '3h', '4s', '6h', '3s', '2d' ,'4s', 'As', '5d', '3s', '4h', '8c', '2s', '8h', 'Kh', '8s', '7h', '8d'];
     return decks;
 }
 
