@@ -9,6 +9,7 @@ let phase = 'bet'; // bet, player, dealer, animation
 let activeHand = 0;
 let insured = 0;
 let images = {};
+let dataUrls = {};
 
 // Store all options in a global variable
 let options = {
@@ -42,8 +43,42 @@ window.addEventListener('resize', function() {
 
 // Main function
 function main() {
+    addKeyboardEventListeners();
     shoe = shuffle(options.numberOfDecks);
     drawGame();
+}
+
+function addKeyboardEventListeners() {
+    // Hit keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.hitKey) {
+            hit();
+        }
+    });
+    // Stand keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.standKey) {
+            nextHand();
+        }
+    });
+    // Surrender keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.surrenderKey) {
+            surrender();
+        }
+    });
+    // Double keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.doubleKey) {
+            double();
+        }
+    });
+    // Split keyboard shortcut
+    addEventListener('keypress', (event) => {
+        if (event.key === options.splitKey) {
+            split();
+        }
+    });
 }
 
 // Load image
@@ -71,10 +106,22 @@ async function preloadImages() {
 
     try {
         await Promise.all(promises);
+        for (let key in images) {
+            dataUrls[key] = getDataUrl(images[key]);
+        }
         main();
     } catch (error) {
         console.error(error);
     }
+}
+
+function getDataUrl(img) {
+    let canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    let ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL();
 }
 
 function drawSettings(gameSize) {
@@ -155,8 +202,9 @@ function drawGame() {
         });
         headerDiv.appendChild(images['settings']);
     }
-    // Draw dealer's hand
-    const cardWidth = gameSize / 6;
+    // Draw dealer div
+    const cardWidth = gameSize / 5;
+    const cardHeight = cardWidth * 1.452;
     let dealerDiv = document.getElementById('dealer');
     if(dealerDiv) {
         dealerDiv.innerHTML = '';
@@ -183,15 +231,18 @@ function drawGame() {
     }
     // Draw dealer's cards
     for (let c = 0; c < dealer.length; c++) {
-        let card = dealer[c];
+
+
+        let card = document.createElement('img');
+        card.src = dataUrls[dealer[c]];
         if (!showHoleCard && c === 0) {
-            card = 'red';
+            card.src = dataUrls['red'];
         }
-        images[card].width = cardWidth;
-        images[card].style.position = 'absolute';
-        images[card].style.top = (iconSize + iconMargin) + 'px';
-        images[card].style.left = (gameSize / 2 - cardWidth * 5/8 + cardWidth / 4 * c) + 'px';
-        document.getElementById('dealer').appendChild(images[card]);
+        card.width = cardWidth;
+        card.style.position = 'absolute';
+        card.style.top = (iconSize + iconMargin) + 'px';
+        card.style.left = (gameSize / 2 - cardWidth * 5/8 + cardWidth / 4 * c) + 'px';
+        document.getElementById('dealer').appendChild(card);
     }
     
 
@@ -202,8 +253,47 @@ function drawGame() {
     }
 
 
-    // Draw player hand(s)
+    // Draw player div
+    const playerDiv = document.createElement('div');
+    playerDiv.id = 'player';
+    document.getElementById('game').appendChild(playerDiv);
 
+
+    
+    for (let hand = 0; hand < hands.length; hand++) {
+        // Draw player hand total(s)
+        if (options.showHandTotals && lastBet) {
+        const handTotal = document.createElement('span');
+        handTotal.id = 'handTotal' + hand;
+        handTotal.innerHTML = getTotal(hands[hand]);
+        handTotal.style.fontSize = iconSize + 'px';
+        handTotal.style.position = 'absolute';
+        handTotal.style.top = (iconSize * 1.5 + iconMargin + cardHeight) + 'px';
+        document.getElementById('player').appendChild(handTotal);
+        const handTotalWidth = handTotal.getBoundingClientRect().width;
+        document.getElementById('handTotal' + hand).style.left =
+        (handLocations[hand] + cardWidth * 5/8 - handTotalWidth / 2) + 'px';
+        }
+        // Draw player hand(s)
+        for (let card = 0; card < hands[hand].length; card++) {
+            let c = document.createElement('img');
+            c.src = dataUrls[hands[hand][card]];
+            c.width = cardWidth;
+            c.style.position = 'absolute';
+            c.style.top = (iconSize * 2.5 + iconMargin + cardHeight) + 'px';
+            c.style.left = (handLocations[hand] + cardWidth / 4 * card) + 'px';
+            document.getElementById('player').appendChild(c);
+        }
+    }
+
+
+    
+
+    // Draw player bet(s)
+
+
+    // Draw player active hand
+    
 
 
 
@@ -247,25 +337,25 @@ function drawGame() {
     // }
 
     // Draw player's cards
-    let p = document.getElementById('player');
-    if (!p) {
-        p = document.createElement('p');
-        p.id = 'player';
-        p.style.paddingTop = '500px'
-        document.getElementById('game').appendChild(p);
-    }
-    p.innerHTML = 'Player: ';
-    for (let i = 0; i < hands.length; i++) {
-        p.innerHTML += hands[i];
-        if (options.showHandTotals) {
-            p.innerHTML += ' Total: ' + getTotal(hands[i]);
-        }
-        p.innerHTML += ' Bet: ' + bets[i] + ' | ';
-    }
-    if (insured !== 0) {
-        p.innerHTML += 'Insurance bet: ' + insured + ' | ';
-    }
-    p.innerHTML += 'Active Hand: ' + activeHand;
+    // let p = document.getElementById('player');
+    // if (!p) {
+    //     p = document.createElement('p');
+    //     p.id = 'player';
+    //     p.style.paddingTop = '500px'
+    //     document.getElementById('game').appendChild(p);
+    // }
+    // p.innerHTML = 'Player: ';
+    // for (let i = 0; i < hands.length; i++) {
+    //     p.innerHTML += hands[i];
+    //     if (options.showHandTotals) {
+    //         p.innerHTML += ' Total: ' + getTotal(hands[i]);
+    //     }
+    //     p.innerHTML += ' Bet: ' + bets[i] + ' | ';
+    // }
+    // if (insured !== 0) {
+    //     p.innerHTML += 'Insurance bet: ' + insured + ' | ';
+    // }
+    // p.innerHTML += 'Active Hand: ' + activeHand;
 
 
 
@@ -284,10 +374,8 @@ function drawGame() {
     }
     else {
         const buttonsDrawn = document.getElementById('hit');
-        console.log(buttonsDrawn)
         if (!buttonsDrawn) {
             // TODO Remove bet div (once is exists) and update id above
-            console.log('drawButtons')
             drawButtons();
         }
     }
@@ -371,56 +459,26 @@ function drawButtons() {
     hitButton.innerHTML = 'Hit';
     document.getElementById('game').appendChild(hitButton);
     hitButton.addEventListener('click', hit);
-    // Hit keyboard shortcut
-    addEventListener('keypress', (event) => {
-        if (event.key === options.hitKey) {
-            hit();
-        }
-    });
     // Create stand button
     const standButton = document.createElement('button');
     standButton.innerHTML = 'Stand';
     document.getElementById('game').appendChild(standButton);
     standButton.addEventListener('click', nextHand);
-    // Stand keyboard shortcut
-    addEventListener('keypress', (event) => {
-        if (event.key === options.standKey) {
-            nextHand();
-        }
-    });
     // Create surrender button
     const surrenderButton = document.createElement('button');
     surrenderButton.innerHTML = 'Surrender';
     document.getElementById('game').appendChild(surrenderButton);
     surrenderButton.addEventListener('click', surrender);
-    // Double keyboard shortcut
-    addEventListener('keypress', (event) => {
-        if (event.key === options.surrenderKey) {
-            surrender();
-        }
-    });
     // Create double button
     const doubleButton = document.createElement('button');
     doubleButton.innerHTML = 'Double';
     document.getElementById('game').appendChild(doubleButton);
     doubleButton.addEventListener('click', double);
-    // Double keyboard shortcut
-    addEventListener('keypress', (event) => {
-        if (event.key === options.doubleKey) {
-            double();
-        }
-    });
     // Create split button
     const splitButton = document.createElement('button');
     splitButton.innerHTML = 'Split';
     document.getElementById('game').appendChild(splitButton);
     splitButton.addEventListener('click', split);
-    // Split keyboard shortcut
-    addEventListener('keypress', (event) => {
-        if (event.key === options.splitKey) {
-            split();
-        }
-    });
 }
 
 // Create a standard 52 card deck
@@ -450,8 +508,10 @@ function shuffle(numberOfDecks) {
         [decks[i], decks[j]] = [decks[j], decks[i]];
     }
     // DEV ONLY
-    // options.shoePenatration = 1;
-    // decks = ['9d' ,'Ks', 'As', '5d', '8s', 'Jh', '8c', 'Ks', '8h', 'Ac', '8s', '7d', '8d'];
+    options.shoePenatration = 1;
+    // decks = ['2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s']
+    // decks = ['As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As'];
+    // decks = ['9d' ,'Ks', 'As', '5d', '8s', 'Jh', '8c', 'Ks', '8h', 'Kh', '8s', 'Ah', '8d'];
     return decks;
 }
 
@@ -470,7 +530,6 @@ function dealHand() {
             if (i === 1) {
                 setTimeout(() => {
                     peak();
-                    phase = 'player';
                 }, 100); // Small delay to ensure card is drawn
             }
         }, i * options.dealerSpeed * 2 + options.dealerSpeed);
