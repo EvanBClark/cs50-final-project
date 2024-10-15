@@ -5,31 +5,55 @@ let hands = [ [] ];
 let bets = [];
 let lastBet = null;
 let cash = 100;
-let phase = 'bet'; // bet, player, dealer, animation
+let phase = 'bet'; // bet, player, dealer, animation, settings
 let activeHand = 0;
 let insured = 0;
 let images = {};
 let dataUrls = {};
+let settingsMenu = false;
 
-// Store all options in a global variable
-let options = {
+// Define default options
+const defaultOptions = {
+    showHandTotals: true,
+    dealerSpeed: 500, // in milliseconds
     numberOfDecks: 6,
     shoePenatration: .75, // percent of shoe dealer will deal before reshuffling
     soft17: 'hits', // hits, stands
     doubleAfterSplit: true,
-    doubleVariation: 'allCards', // 'allCards' or '9,10,11' // STILL NEED TO ADD
-    surrender: 'notAllowed', // notAllowed, nonAces, allCards // Only supports late surrender
+    splitAces1Card: true,
+    //doubleVariation: 'allCards', // 'allCards' or '9,10,11' // STILL NEED TO ADD
+    surrender: 'allCards', // notAllowed, nonAces, allCards // Only supports late surrender
     dealerPeak: true,
     insurance: false,
-    splitAces1Card: true,
-    showHandTotals: true,
-    dealerSpeed: 500, // in milliseconds
     hitKey: ' ',
     standKey: 'Enter',
     doubleKey: 'd',
     splitKey: 's',
     surrenderKey: 'u',
 };
+
+// Store all options in a global variable
+let options = structuredClone(defaultOptions);
+let tempOptions = structuredClone(options);
+
+
+// console.log(defaultOptions);
+// console.log(options);
+
+// options.numberOfDecks = 10;
+
+// console.log(defaultOptions);
+// console.log(options);
+
+// tempOptions = structuredClone(options);
+// tempOptions.shoePenatration = 1;
+
+// console.log(options);
+// console.log(tempOptions);
+
+
+
+
 
 // Once HTML page has loaded, preload Images
 document.addEventListener('DOMContentLoaded', function() { 
@@ -51,31 +75,31 @@ function main() {
 function addKeyboardEventListeners() {
     // Hit keyboard shortcut
     addEventListener('keypress', (event) => {
-        if (event.key === options.hitKey) {
+        if (event.key === options.hitKey && !settingsMenu) {
             hit();
         }
     });
     // Stand keyboard shortcut
     addEventListener('keypress', (event) => {
-        if (event.key === options.standKey) {
+        if (event.key === options.standKey && !settingsMenu) {
             nextHand();
         }
     });
     // Double keyboard shortcut
     addEventListener('keypress', (event) => {
-        if (event.key === options.doubleKey) {
+        if (event.key === options.doubleKey && !settingsMenu) {
             double();
         }
     });
     // Split keyboard shortcut
     addEventListener('keypress', (event) => {
-        if (event.key === options.splitKey) {
+        if (event.key === options.splitKey && !settingsMenu) {
             split();
         }
     });
     // Surrender keyboard shortcut
     addEventListener('keypress', (event) => {
-        if (event.key === options.surrenderKey) {
+        if (event.key === options.surrenderKey && !settingsMenu) {
             surrender();
         }
     });
@@ -95,7 +119,7 @@ function loadImage(src) {
 // Pre-load all images
 async function preloadImages() {
     const fileNames = createDeck();
-    const otherFileNames = ['chips', 'settings', 'red'];
+    const otherFileNames = ['whiteX', 'chips', 'settings', 'red'];
     for (let i = 0; i < otherFileNames.length; i++) {
         fileNames.push(otherFileNames[i]);
     }
@@ -125,17 +149,184 @@ function getDataUrl(img) {
     return canvas.toDataURL();
 }
 
-function drawSettings(gameSize) {
+function drawSettings(gameSize, iconSize, iconMargin) {
+    // Draw Settings title
     document.getElementById('game').innerHTML = '';
     title = document.createElement('span');
     title.innerHTML = 'Settings';
     title.style.fontSize = (gameSize / 15) + 'px';
     document.getElementById('game').appendChild(title);
+    // Draw white X close button
+    const whiteX = document.createElement('img');
+    whiteX.src = dataUrls['whiteX'];
+    whiteX.id = 'whiteX';
+    whiteX.height = iconSize;
+    whiteX.style.position = 'absolute';
+    whiteX.style.top = (gameSize / 150) + 'px';
+    whiteX.style.right = iconMargin + 'px';
+    whiteX.addEventListener('click', closeSettings);
+    document.getElementById('game').appendChild(whiteX);
+    // Draw showHandTotals option
+    const showHandTotals = drawCheckbox(iconSize, tempOptions.showHandTotals, 'showHandTotals', ' Show hand totals');
+    document.getElementById('game').appendChild(showHandTotals);
+    showHandTotals.addEventListener('click', function() {
+        if (document.getElementById('checkboxtotals').checked) {
+            tempOptions.showHandTotals = true;
+        }
+        else {
+            tempOptions.showHandTotals = false;
+        }
+    })
+
+    // Draw dealerSpeed option
+
+
+    // Draw numberOfDecks option
+
+
+    // Draw shoePenatration option
+
+
+    // Draw soft17 option
+
+
+    // Draw doubleAfterSplit option
+    const doubleAfterSplit = drawCheckbox(iconSize, tempOptions.doubleAfterSplit, 'doubleAfterSplit', ' Double after split');
+    document.getElementById('game').appendChild(doubleAfterSplit);
+    doubleAfterSplit.addEventListener('click', function() {
+        if (document.getElementById('checkboxdoubleAfterSplit').checked) {
+            tempOptions.doubleAfterSplit = true;
+        }
+        else {
+            tempOptions.doubleAfterSplit = false;
+        }
+    })
+    // Draw splitAces1Card option
+    const splitAces1Card = drawCheckbox(iconSize, tempOptions.splitAces1Card, 'splitAces1Card', ' Split aces get 1 card each');
+    document.getElementById('game').appendChild(splitAces1Card);
+    splitAces1Card.addEventListener('click', function() {
+        if (document.getElementById('checkboxsplitAces1Card').checked) {
+            tempOptions.splitAces1Card = true;
+        }
+        else {
+            tempOptions.splitAces1Card = false;
+        }
+    })
+
+
+    // Draw surrender option
+
+
+    // Draw dealerPeak option
+    const dealerPeak = drawCheckbox(iconSize, tempOptions.dealerPeak, 'dealerPeak', ' Dealer peaks for blackjack');
+    document.getElementById('game').appendChild(dealerPeak);
+    dealerPeak.addEventListener('click', function() {
+        if (document.getElementById('checkboxdealerPeak').checked) {
+            tempOptions.dealerPeak = true;
+        }
+        else {
+            tempOptions.dealerPeak = false;
+        }
+    })
+
+
+    // Draw insurance option
+    const insurance = drawCheckbox(iconSize, tempOptions.insurance, 'insurance', ' Offer insurance');
+    document.getElementById('game').appendChild(insurance);
+    insurance.addEventListener('click', function() {
+        if (document.getElementById('checkboxinsurance').checked) {
+            tempOptions.insurance = true;
+        }
+        else {
+            tempOptions.insurance = false;
+        }
+    })
+
+
+    // showHandTotals: true,
+    // dealerSpeed: 500, // in milliseconds
+    // numberOfDecks: 6,
+    // shoePenatration: .75, // percent of shoe dealer will deal before reshuffling
+    // soft17: 'hits', // hits, stands
+    // doubleAfterSplit: true,
+    // splitAces1Card: true,
+    // //doubleVariation: 'allCards', // 'allCards' or '9,10,11' // STILL NEED TO ADD
+    // surrender: 'allCards', // notAllowed, nonAces, allCards // Only supports late surrender
+    // dealerPeak: true,
+    // insurance: false,
+
+
+
+
+
+
+
+
 
 
     // TODO: Add all settings
 
 
+
+
+
+    // Draw buttonsDiv
+    const buttonsDiv = document.createElement('div');
+    document.getElementById('game').appendChild(buttonsDiv);
+    // Define button properties
+    const buttonHeight = iconSize + 'px';
+    const buttonWidth = iconSize * 3 + 'px';
+    const buttonFontSize = iconSize * .7 + 'px';
+    const buttonBorderRadius = iconSize / 5 + 'px';
+    const buttonMargin = iconSize / 10 +'px';
+    // Draw buttons
+    const saveButton = drawButton('saveButton', 'Save', buttonHeight, buttonWidth, buttonFontSize, buttonBorderRadius, buttonMargin);
+    saveButton.addEventListener('click', saveSettings);
+    buttonsDiv.appendChild(saveButton);
+    const closeButton = drawButton('closeButton', 'Cancel', buttonHeight, buttonWidth, buttonFontSize, buttonBorderRadius, buttonMargin);
+    closeButton.addEventListener('click', closeSettings);
+    buttonsDiv.appendChild(closeButton);
+}
+
+function drawCheckbox(iconSize, option, id, labelText) {
+    const p = document.createElement('p');
+    document.getElementById('game').appendChild(p);
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = 'checkbox' + id;
+    checkbox.style.height = iconSize / 2 + 'px';
+    checkbox.style.width = iconSize / 2 + 'px';
+    if (option) {
+        checkbox.checked = true;
+    }
+    else {
+        checkbox.checked = false;
+    }
+    p.appendChild(checkbox);
+    const label = document.createElement('label');
+    label.for = 'checkbox' + id;
+    label.innerHTML = labelText;
+    label.style.fontSize = iconSize / 1.5 +'px';
+    p.appendChild(label);
+    return p;
+}
+
+
+
+
+
+function closeSettings() {
+    if (confirm('Are you sure you want to close the settings page? Any changes will not be saved.')) {
+        settingsMenu = false;
+        drawGame();
+    }
+}
+
+function saveSettings() {
+    options = structuredClone(tempOptions);
+    alert('Settings saved.');
+    settingsMenu = false;
+    drawGame();
 }
 
 function drawGame() {
@@ -167,19 +358,22 @@ function drawGame() {
     const iconMargin = gameSize / 150;
     const cardWidth = gameSize / 5;
     const cardHeight = cardWidth * 1.452;
-    // Draw the contents of the game
-    drawHeader(gameSize, iconSize, iconMargin);
-    drawDealer(gameSize, iconSize, iconMargin, cardWidth);
-    drawPlayer(gameSize, iconSize, iconMargin, cardWidth, cardHeight);
-
-    
-
-    // drawBet or drawButtons depending on game phase
-    if (phase === 'bet') {
-        drawBet(gameSize, iconSize);
+    // If settings menu is open
+    if (settingsMenu) {
+        drawSettings(gameSize, iconSize, iconMargin);
     }
     else {
-        drawButtons(gameSize, iconSize);
+        // Draw the contents of the game
+        drawHeader(gameSize, iconSize, iconMargin);
+        drawDealer(gameSize, iconSize, iconMargin, cardWidth);
+        drawPlayer(gameSize, iconSize, iconMargin, cardWidth, cardHeight);
+        // drawBet or drawButtons depending on game phase
+        if (phase === 'bet') {
+            drawBet(gameSize, iconSize);
+        }
+        else {
+            drawButtons(gameSize, iconSize);
+        }
     }
 }
 
@@ -199,29 +393,26 @@ function drawHeader(gameSize, iconSize, iconMargin) {
     chipsIcon.style.left = iconMargin + 'px';
     headerDiv.appendChild(chipsIcon);
     // Draw chips value
-    chipsValue = document.getElementById('chipsValue')
-    if (!chipsValue) {
-        chipsValue = document.createElement('span');
-        chipsValue.id = 'chipsValue';
-        chipsValue.style.fontSize = iconSize + 'px';
-        chipsValue.style.position = 'absolute';
-        chipsValue.style.left = (iconMargin + iconSize) + 'px';
-        headerDiv.appendChild(chipsValue);
-    }
+    chipsValue = document.createElement('span');
+    chipsValue.id = 'chipsValue';
+    chipsValue.style.fontSize = iconSize + 'px';
+    chipsValue.style.position = 'absolute';
+    chipsValue.style.left = (iconMargin + iconSize) + 'px';
+    headerDiv.appendChild(chipsValue);
     chipsValue.innerHTML = cash;
     // Draw settings icon
-    const settingsIcon = document.getElementById('settingsIcon');
-    if (!settingsIcon) {
-        images['settings'].id = 'settingsIcon';
-        images['settings'].height = iconSize;
-        images['settings'].style.position = 'absolute';
-        images['settings'].style.top = (gameSize / 150) + 'px';
-        images['settings'].style.right = iconMargin + 'px';
-        images['settings'].addEventListener('click', function() {
-            drawSettings(gameSize);
-        });
-        headerDiv.appendChild(images['settings']);
-    }
+    images['settings'].id = 'settingsIcon';
+    images['settings'].height = iconSize;
+    images['settings'].style.position = 'absolute';
+    images['settings'].style.top = (gameSize / 150) + 'px';
+    images['settings'].style.right = iconMargin + 'px';
+    images['settings'].addEventListener('click', function() {
+        // Save options in tempOptions
+        tempOptions = structuredClone(options);
+        settingsMenu = true;
+        drawSettings(gameSize, iconSize, iconMargin);
+    });
+    headerDiv.appendChild(images['settings']);
 }
 
 function drawDealer(gameSize, iconSize, iconMargin, cardWidth) {
@@ -397,6 +588,12 @@ function drawBet(gameSize, iconSize) {
 
 // Draw buttons
 function drawButtons(gameSize, iconSize) {
+    // Define button properties
+    const buttonHeight = iconSize + 'px';
+    const buttonWidth = iconSize * 5 + 'px';
+    const buttonFontSize = iconSize * .7 + 'px';
+    const buttonBorderRadius = iconSize / 5 + 'px';
+    const buttonMargin = iconSize / 20 +'px';
     // Create buttonsDiv
     const buttonsDiv = document.createElement('div');
     buttonsDiv.style.position = 'absolute';
@@ -409,61 +606,25 @@ function drawButtons(gameSize, iconSize) {
     const bottomButtonsDiv = document.createElement('div');
     buttonsDiv.appendChild(bottomButtonsDiv);
     // Create hit button
-    const hitButton = document.createElement('button');
-    hitButton.id = 'hitButton';
-    hitButton.innerHTML = 'Hit';
-    hitButton.style.height = iconSize + 'px';
-    hitButton.style.width = iconSize * 5 + 'px';
-    hitButton.style.fontSize = iconSize * .7 + 'px';
-    hitButton.style.borderRadius = iconSize / 5 + 'px';
-    hitButton.style.margin = iconSize / 20 +'px';
+    const hitButton = drawButton('hitButton', 'Hit', buttonHeight, buttonWidth, buttonFontSize, buttonBorderRadius, buttonMargin);
     topButtonsDiv.appendChild(hitButton);
     hitButton.addEventListener('click', hit);
     // Create stand button
-    const standButton = document.createElement('button');
-    standButton.id = 'standButton';
-    standButton.innerHTML = 'Stand';
-    standButton.style.height = iconSize + 'px';
-    standButton.style.width = iconSize * 5 + 'px';
-    standButton.style.fontSize = iconSize * .7 + 'px';
-    standButton.style.borderRadius = iconSize / 5 + 'px';
-    standButton.style.margin = iconSize / 20 +'px';
+    const standButton = drawButton('standButton', 'Stand', buttonHeight, buttonWidth, buttonFontSize, buttonBorderRadius, buttonMargin);
     topButtonsDiv.appendChild(standButton);
     standButton.addEventListener('click', nextHand);
     // Create double button
-    const doubleButton = document.createElement('button');
-    doubleButton.innerHTML = 'Double';
-    doubleButton.id = 'doubleButton';
-    doubleButton.style.height = iconSize + 'px';
-    doubleButton.style.fontSize = iconSize * .7 + 'px';
-    doubleButton.style.borderRadius = iconSize / 5 + 'px';
-    doubleButton.style.margin = iconSize / 20 +'px';
+    const doubleButton = drawButton('doubleButton', 'Double', buttonHeight, buttonWidth, buttonFontSize, buttonBorderRadius, buttonMargin);
     bottomButtonsDiv.appendChild(doubleButton);
     doubleButton.addEventListener('click', double);
     // Create split button
-    const splitButton = document.createElement('button');
-    splitButton.innerHTML = 'Split';
-    splitButton.id = 'splitButton';
-    splitButton.style.height = iconSize + 'px';
-    splitButton.style.fontSize = iconSize * .7 + 'px';
-    splitButton.style.borderRadius = iconSize / 5 + 'px';
-    splitButton.style.margin = iconSize / 20 +'px';
+    const splitButton = drawButton('splitButton', 'Split', buttonHeight, buttonWidth, buttonFontSize, buttonBorderRadius, buttonMargin);
     bottomButtonsDiv.appendChild(splitButton);
     splitButton.addEventListener('click', split);
-
-    if (options.surrender === 'notAllowed') {
-        doubleButton.style.width = iconSize * 5 + 'px';
-        splitButton.style.width = iconSize * 5 + 'px';
-    }
-    else {
+    // If surrender isn't allowed
+    if (options.surrender !== 'notAllowed') {
         // Create surrender button
-        const surrenderButton = document.createElement('button');
-        surrenderButton.id = 'surrenderButton';
-        surrenderButton.innerHTML = 'Surrender';
-        surrenderButton.style.height = iconSize + 'px';
-        surrenderButton.style.fontSize = iconSize * .7 + 'px';
-        surrenderButton.style.borderRadius = iconSize / 5 + 'px';
-        surrenderButton.style.margin = iconSize / 20 +'px';
+        const surrenderButton = drawButton('surrenderButton', 'Surrender', buttonHeight, buttonWidth, buttonFontSize, buttonBorderRadius, buttonMargin);
         bottomButtonsDiv.appendChild(surrenderButton);
         surrenderButton.addEventListener('click', surrender);
         // Set bottom row button widths
@@ -471,10 +632,21 @@ function drawButtons(gameSize, iconSize) {
         splitButton.style.width = iconSize * (3 + 1 / 3) + 'px';
         surrenderButton.style.width = iconSize * (3 + 1 / 3) + 'px';
     }
-
     // Center buttonsDiv
     buttonsDivWidth = buttonsDiv.getBoundingClientRect().width;
     buttonsDiv.style.left = (gameSize / 2 - buttonsDivWidth / 2) + 'px';
+}
+
+function drawButton(id, innerHTML, height, width, fontSize, borderRadius, margin) {
+    const button = document.createElement('button');
+    button.id = id;
+    button.innerHTML = innerHTML;
+    button.style.height = height;
+    button.style.width = width;
+    button.style.fontSize = fontSize;
+    button.style.borderRadius = borderRadius;
+    button.style.margin = margin;
+    return button;
 }
 
 function betPlaced() {
@@ -812,7 +984,6 @@ function paySurrender() {
     bets[activeHand] = Math.trunc(bets[activeHand] / 2);
     phase = 'bet';
     drawGame();
-    drawBet();
 }
 
 // Dealer's turn
