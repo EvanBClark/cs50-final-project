@@ -170,7 +170,7 @@ function drawSettings(gameSize, iconSize, iconMargin) {
     const showHandTotals = drawCheckbox(iconSize, tempOptions.showHandTotals, 'showHandTotals', ' Show hand totals');
     document.getElementById('game').appendChild(showHandTotals);
     showHandTotals.addEventListener('click', function() {
-        if (document.getElementById('checkboxtotals').checked) {
+        if (document.getElementById('checkboxshowHandTotals').checked) {
             tempOptions.showHandTotals = true;
         }
         else {
