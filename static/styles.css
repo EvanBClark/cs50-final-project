@@ -1,8 +1,10 @@
 body {
     margin: 0;
     overflow: hidden;
-    /*background: linear-gradient(rgb(39, 236, 39), rgb(0, 153, 0));
-    height: 100vh;*/
+    /* Prevent text select */
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
 }
 
 #container {
@@ -23,6 +25,43 @@ span {
     color: white;
 }
 
+.activeBet {
+    background: radial-gradient(rgb(255,229,35, .6) 40%, rgb(255,229,35, 0) 60%, rgb(255,229,35, 0) 80%);
+}
+
+input {
+    padding: 0;
+}
+
+button {
+    padding: 0;
+    border-color: rgb(69, 69, 69);
+    color: white;
+}
+
+#betButton {
+    background-image: linear-gradient(rgb(0, 113, 227), rgb(0, 95, 189));
+}
+
+#hitButton {
+    background-image: linear-gradient(rgb(0, 154, 0), rgb(0, 90, 0));
+}
+
+#standButton {
+    background-image: linear-gradient(rgb(255, 0, 0), rgb(179, 0, 0));
+}
+
+#doubleButton {
+    background-image: linear-gradient(rgb(0, 189, 227), rgb(0, 143, 171));
+}
+
+#splitButton {
+    background-image: linear-gradient(rgb(228, 228, 0), rgb(186, 186, 0));
+}
+
+#surrenderButton {
+    background-image: linear-gradient(rgb(221, 0, 255), rgb(169, 0, 195));
+}
 
 /*
 #game {
