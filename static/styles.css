@@ -18,6 +18,8 @@ body {
 
 #game {
     background: linear-gradient(rgb(20, 175, 20), rgb(0, 153, 0));
+    background-image: url('images/background.jpg');
+    background-size: contain;
 }
 
 span, p {
@@ -57,7 +59,7 @@ button {
 }
 
 #splitButton {
-    background-image: linear-gradient(rgb(228, 228, 0), rgb(186, 186, 0));
+    background-image: linear-gradient(rgb(230, 203, 0), rgb(197, 174, 0));
 }
 
 #surrenderButton {

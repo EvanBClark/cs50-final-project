@@ -17,12 +17,12 @@ const defaultOptions = {
     showHandTotals: true,
     dealerSpeed: 500, // in milliseconds
     numberOfDecks: 6,
-    shoePenetration: .75, // percent of shoe dealer will deal before reshuffling
+    shoePenetration: .75,
     soft17: 'hits', // hits, stands
     doubleAfterSplit: true,
     splitAces1Card: true,
-    //doubleVariation: 'allCards', // 'allCards' or '9,10,11' // STILL NEED TO ADD
-    surrender: 'All Cards', // Not Allowed, Non-Aces, All Cards // Only supports late surrender
+    //doubleVariation: 'All Cards', // 'All Cards' or '9,10, or 11' // STILL NEED TO ADD
+    surrender: 'Not Allowed', // Not Allowed, Non-Aces, All Cards
     dealerPeak: true,
     insurance: false,
     buyIn: null,
@@ -400,7 +400,6 @@ function saveSettings() {
         tempOptions.shoePenetration = tempOptions.shoePenetration / 100;
     }
     // Buy in chips
-    console.log(!isNaN(tempOptions.buyIn));
     if (!isNaN(tempOptions.buyIn) && tempOptions.buyIn !== null) {
         cash += parseInt(tempOptions.buyIn);
     }
@@ -463,6 +462,7 @@ function drawHeader(gameSize, iconSize, iconMargin) {
     const headerDiv = document.createElement('div');
     headerDiv.id = 'headerDiv';
     document.getElementById('game').appendChild(headerDiv);
+
     // Draw chips icon
     let chipsIcon = document.createElement('img');
     chipsIcon.src = dataUrls['chips'];
@@ -473,6 +473,7 @@ function drawHeader(gameSize, iconSize, iconMargin) {
     chipsIcon.style.top = iconMargin + 'px';
     chipsIcon.style.left = iconMargin + 'px';
     headerDiv.appendChild(chipsIcon);
+
     // Draw chips value
     chipsValue = document.createElement('span');
     chipsValue.id = 'chipsValue';
@@ -481,6 +482,69 @@ function drawHeader(gameSize, iconSize, iconMargin) {
     chipsValue.style.left = (iconMargin + iconSize) + 'px';
     headerDiv.appendChild(chipsValue);
     chipsValue.innerHTML = cash;
+
+    // Draw dealer lights
+    if (options.dealerPeak) {
+        // Background
+        const lightsDiv = document.createElement('div');
+        lightsDiv.style.height = iconSize + 'px';
+        lightsDiv.style.width = iconSize * 1.5 + 'px';
+        lightsDiv.style.backgroundColor = 'rgb(40, 40, 40)';
+        lightsDiv.style.position = 'absolute';
+        lightsDiv.style.left = gameSize / 4 + 'px';
+        lightsDiv.style.top = iconMargin / 2 + 'px';
+        headerDiv.appendChild(lightsDiv);
+
+        // Green Light
+        const greenLight = document.createElement('div');
+        greenLight.id = 'greenLight';
+        greenLight.style.width = iconMargin * 3.6 + 'px';
+        greenLight.style.height = iconMargin * 3.6 + 'px';
+        greenLight.style.position = 'absolute';
+        greenLight.style.top = (iconSize - iconMargin * 3.6) / 2 + 'px';
+        greenLight.style.left = iconSize / 4 + 'px';
+        greenLight.style.backgroundColor = 'darkgreen';
+        greenLight.style.borderRadius = '50%';
+        lightsDiv.appendChild(greenLight);
+
+        // Red Light
+        const redLight = document.createElement('div');
+        redLight.id = 'redLight';
+        redLight.style.width = iconMargin * 3.6 + 'px';
+        redLight.style.height = iconMargin * 3.6 + 'px';
+        redLight.style.position = 'absolute';
+        redLight.style.top = (iconSize - iconMargin * 3.6) / 2 + 'px';
+        redLight.style.right = iconSize / 4 + 'px';
+        if (dealer.length === 2 && getTotal(dealer).length === 2 && getTotal(dealer)[1] === 21) {
+            redLight.style.backgroundColor = 'red';
+        }
+        else {
+            redLight.style.backgroundColor = 'darkred';
+        }
+        redLight.style.borderRadius = '50%';
+        lightsDiv.appendChild(redLight);
+    }
+
+    // Draw shoe
+    const canvas = document.createElement('canvas');
+    canvas.height = iconSize;
+    canvas.width = iconSize * 4;
+    canvas.style.backgroundColor = 'rgb(40, 40, 40)';
+    canvas.style.position = 'absolute';
+    canvas.style.right = iconSize + iconMargin * 3.5 + 'px';
+    canvas.style.top = iconMargin / 2 + 'px';
+    headerDiv.appendChild(canvas);
+    const shoePercent = shoe.length / (options.numberOfDecks * 52);
+    const context = canvas.getContext("2d");
+    context.fillStyle = 'rgb(230, 230, 230)';
+    context.fillRect(iconMargin, iconMargin, (canvas.width - (iconMargin * 2)) * shoePercent, canvas.height - (iconMargin * 2));
+    const lineX = (canvas.width - (iconMargin * 2)) * (1 - options.shoePenetration) + iconMargin;
+    context.beginPath();
+    context.moveTo(lineX, iconMargin);
+    context.lineTo(lineX, iconSize - iconMargin);
+    context.strokeStyle = 'red';
+    context.lineWidth = iconMargin;
+    context.stroke();
     // Draw settings icon
     images['settings'].id = 'settingsIcon';
     images['settings'].height = iconSize;
@@ -518,7 +582,7 @@ function drawDealer(gameSize, iconSize, iconMargin, cardWidth) {
     // Draw dealer total
     if (options.showHandTotals && showHoleCard && lastBet) {
         const dealerTotal = document.createElement('span');
-        dealerTotal.innerHTML = getTotal(dealer);
+        dealerTotal.innerHTML = formatDealerTotal(getTotal(dealer));
         dealerTotal.style.fontSize = iconSize + 'px';
         document.getElementById('dealer').appendChild(dealerTotal);
     }
@@ -536,6 +600,13 @@ function drawDealer(gameSize, iconSize, iconMargin, cardWidth) {
         card.style.left = (gameSize / 2 - cardWidth * 5/8 + cardWidth / 4 * c) + 'px';
         document.getElementById('dealer').appendChild(card);
     }
+}
+
+function formatDealerTotal(total) {
+    if (total.length === 2) {
+        total = total[1];
+    }
+    return total;
 }
 
 function drawPlayer(gameSize, iconSize, iconMargin, cardWidth, cardHeight) {
@@ -562,7 +633,7 @@ function drawPlayer(gameSize, iconSize, iconMargin, cardWidth, cardHeight) {
         if (options.showHandTotals && lastBet) {
             const handTotal = document.createElement('span');
             handTotal.id = 'handTotal' + hand;
-            handTotal.innerHTML = getTotal(hands[hand]);
+            handTotal.innerHTML = formatPlayerTotal(getTotal(hands[hand]));
             handTotal.style.fontSize = iconSize + 'px';
             handTotal.style.position = 'absolute';
             handTotal.style.top = (iconSize * 1.5 + iconMargin + cardHeight) + 'px';
@@ -615,6 +686,18 @@ function drawPlayer(gameSize, iconSize, iconMargin, cardWidth, cardHeight) {
             (handLocations[hand] + cardWidth * 5/8 - betWidth / 2) + 'px';
         }        
     }
+}
+
+function formatPlayerTotal(total) {
+    if (total.length === 2) {
+        if (total[1] === 21) {
+            total = 21;
+        }
+        else {
+            total = total[0] + '/' + total[1];
+        }
+    }
+    return total;
 }
 
 // Take bet
@@ -805,6 +888,7 @@ function shuffle(numberOfDecks) {
     // decks = ['2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s'];
     // decks = ['As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As'];
     // decks = ['3h', '2s', '5h', '5c', '3h', '4s', '6h', '3s', '2d' ,'4s', 'As', '5d', '3s', '4h', '8c', '2s', '8h', 'Kh', '8s', '7h', '8d'];
+    // decks = ['3h', '2s', '5h', '5c', '3h', '4s', '6h', '3s', '2d', '3h', '2s', '5h', '8c', 'Ah', 'Ks', 'Jh', '5s']
     // options.shoePenetration = 1;
     return decks;
 }
@@ -865,13 +949,12 @@ function continuePeak() {
         if (['A', 'K', 'Q', 'J', 'T'].includes(dealer[1][0])) {
             // If blackjack
             if (getTotal(dealer).length === 2 && getTotal(dealer)[1] === 21) {
-                console.log('Red light');
                 phase = 'dealer';
                 dealersTurn();
             } else {
-                console.log('Green light');
                 insured = 0;
                 drawGame();
+                document.getElementById('greenLight').style.backgroundColor = 'rgb(0, 255, 0)';
                 phase = 'player';
             }
         } else {
