@@ -17,14 +17,15 @@ const defaultOptions = {
     showHandTotals: true,
     dealerSpeed: 500, // in milliseconds
     numberOfDecks: 6,
-    shoePenatration: .75, // percent of shoe dealer will deal before reshuffling
+    shoePenetration: .75, // percent of shoe dealer will deal before reshuffling
     soft17: 'hits', // hits, stands
     doubleAfterSplit: true,
     splitAces1Card: true,
     //doubleVariation: 'allCards', // 'allCards' or '9,10,11' // STILL NEED TO ADD
-    surrender: 'allCards', // notAllowed, nonAces, allCards // Only supports late surrender
+    surrender: 'All Cards', // Not Allowed, Non-Aces, All Cards // Only supports late surrender
     dealerPeak: true,
     insurance: false,
+    buyIn: null,
     hitKey: ' ',
     standKey: 'Enter',
     doubleKey: 'd',
@@ -35,25 +36,6 @@ const defaultOptions = {
 // Store all options in a global variable
 let options = structuredClone(defaultOptions);
 let tempOptions = structuredClone(options);
-
-
-// console.log(defaultOptions);
-// console.log(options);
-
-// options.numberOfDecks = 10;
-
-// console.log(defaultOptions);
-// console.log(options);
-
-// tempOptions = structuredClone(options);
-// tempOptions.shoePenatration = 1;
-
-// console.log(options);
-// console.log(tempOptions);
-
-
-
-
 
 // Once HTML page has loaded, preload Images
 document.addEventListener('DOMContentLoaded', function() { 
@@ -156,6 +138,7 @@ function drawSettings(gameSize, iconSize, iconMargin) {
     title.innerHTML = 'Settings';
     title.style.fontSize = (gameSize / 15) + 'px';
     document.getElementById('game').appendChild(title);
+
     // Draw white X close button
     const whiteX = document.createElement('img');
     whiteX.src = dataUrls['whiteX'];
@@ -166,6 +149,15 @@ function drawSettings(gameSize, iconSize, iconMargin) {
     whiteX.style.right = iconMargin + 'px';
     whiteX.addEventListener('click', closeSettings);
     document.getElementById('game').appendChild(whiteX);
+
+    // Draw buy in chips
+    const buyIn = drawTextInput(iconSize, 'buyIn', ' Buy in (add chips)');
+    document.getElementById('game').appendChild(buyIn);
+    document.getElementById('buyIn').value = tempOptions.buyIn;
+    buyIn.addEventListener("input", (event) => {
+        tempOptions.buyIn = event.target.value;
+    });
+
     // Draw showHandTotals option
     const showHandTotals = drawCheckbox(iconSize, tempOptions.showHandTotals, 'showHandTotals', ' Show hand totals');
     document.getElementById('game').appendChild(showHandTotals);
@@ -179,43 +171,40 @@ function drawSettings(gameSize, iconSize, iconMargin) {
     })
 
     // Draw dealerSpeed option
-
+    const dealerSpeed = drawTextInput(iconSize, 'dealerSpeed', ' Dealer speed in ms');
+    document.getElementById('game').appendChild(dealerSpeed);
+    document.getElementById('dealerSpeed').value = tempOptions.dealerSpeed;
+    dealerSpeed.addEventListener("input", (event) => {
+        tempOptions.dealerSpeed = event.target.value;
+    });
 
     // Draw numberOfDecks option
+    const numberOfDecks = drawTextInput(iconSize, 'numberOfDecks', ' Number of decks');
+    document.getElementById('game').appendChild(numberOfDecks);
+    document.getElementById('numberOfDecks').value = tempOptions.numberOfDecks;
+    numberOfDecks.addEventListener("input", (event) => {
+        tempOptions.numberOfDecks = event.target.value;
+    });
 
-
-    // Draw shoePenatration option
-
+    // Draw shoePenetration option
+    const shoePenetration = drawTextInput(iconSize, 'shoePenetration', '% Shoe penetration for reshuffle');
+    document.getElementById('game').appendChild(shoePenetration);
+    document.getElementById('shoePenetration').value = tempOptions.shoePenetration * 100;
+    shoePenetration.addEventListener("input", (event) => {
+        tempOptions.shoePenetration = event.target.value;
+    });
 
     // Draw soft17 option
-
-
-    // Draw doubleAfterSplit option
-    const doubleAfterSplit = drawCheckbox(iconSize, tempOptions.doubleAfterSplit, 'doubleAfterSplit', ' Double after split');
-    document.getElementById('game').appendChild(doubleAfterSplit);
-    doubleAfterSplit.addEventListener('click', function() {
-        if (document.getElementById('checkboxdoubleAfterSplit').checked) {
-            tempOptions.doubleAfterSplit = true;
+    const soft17 = drawCheckbox(iconSize, tempOptions.soft17, 'soft17', ' Dealer hits on soft 17');
+    document.getElementById('game').appendChild(soft17);
+    soft17.addEventListener('click', function() {
+        if (document.getElementById('checkboxsoft17').checked) {
+            tempOptions.soft17 = 'hits';
         }
         else {
-            tempOptions.doubleAfterSplit = false;
+            tempOptions.soft17 = 'stands';
         }
     })
-    // Draw splitAces1Card option
-    const splitAces1Card = drawCheckbox(iconSize, tempOptions.splitAces1Card, 'splitAces1Card', ' Split aces get 1 card each');
-    document.getElementById('game').appendChild(splitAces1Card);
-    splitAces1Card.addEventListener('click', function() {
-        if (document.getElementById('checkboxsplitAces1Card').checked) {
-            tempOptions.splitAces1Card = true;
-        }
-        else {
-            tempOptions.splitAces1Card = false;
-        }
-    })
-
-
-    // Draw surrender option
-
 
     // Draw dealerPeak option
     const dealerPeak = drawCheckbox(iconSize, tempOptions.dealerPeak, 'dealerPeak', ' Dealer peaks for blackjack');
@@ -229,6 +218,37 @@ function drawSettings(gameSize, iconSize, iconMargin) {
         }
     })
 
+    // Draw doubleAfterSplit option
+    const doubleAfterSplit = drawCheckbox(iconSize, tempOptions.doubleAfterSplit, 'doubleAfterSplit', ' Double after split');
+    document.getElementById('game').appendChild(doubleAfterSplit);
+    doubleAfterSplit.addEventListener('click', function() {
+        if (document.getElementById('checkboxdoubleAfterSplit').checked) {
+            tempOptions.doubleAfterSplit = true;
+        }
+        else {
+            tempOptions.doubleAfterSplit = false;
+        }
+    })
+
+    // Draw splitAces1Card option
+    const splitAces1Card = drawCheckbox(iconSize, tempOptions.splitAces1Card, 'splitAces1Card', ' Split aces get 1 card each');
+    document.getElementById('game').appendChild(splitAces1Card);
+    splitAces1Card.addEventListener('click', function() {
+        if (document.getElementById('checkboxsplitAces1Card').checked) {
+            tempOptions.splitAces1Card = true;
+        }
+        else {
+            tempOptions.splitAces1Card = false;
+        }
+    })
+
+    // Draw surrender option
+    const surrender = drawSelect(iconSize, 'surrender', ' Late Surrender', ['Not Allowed', 'Non-Aces', 'All Cards']);
+    document.getElementById('game').appendChild(surrender);
+    document.getElementById('surrender').value = tempOptions.surrender;
+    surrender.addEventListener("change", (event) => {
+        tempOptions.surrender = event.target.value;
+    });
 
     // Draw insurance option
     const insurance = drawCheckbox(iconSize, tempOptions.insurance, 'insurance', ' Offer insurance');
@@ -242,43 +262,17 @@ function drawSettings(gameSize, iconSize, iconMargin) {
         }
     })
 
-
-    // showHandTotals: true,
-    // dealerSpeed: 500, // in milliseconds
-    // numberOfDecks: 6,
-    // shoePenatration: .75, // percent of shoe dealer will deal before reshuffling
-    // soft17: 'hits', // hits, stands
-    // doubleAfterSplit: true,
-    // splitAces1Card: true,
-    // //doubleVariation: 'allCards', // 'allCards' or '9,10,11' // STILL NEED TO ADD
-    // surrender: 'allCards', // notAllowed, nonAces, allCards // Only supports late surrender
-    // dealerPeak: true,
-    // insurance: false,
-
-
-
-
-
-
-
-
-
-
-    // TODO: Add all settings
-
-
-
-
-
     // Draw buttonsDiv
     const buttonsDiv = document.createElement('div');
     document.getElementById('game').appendChild(buttonsDiv);
+
     // Define button properties
     const buttonHeight = iconSize + 'px';
     const buttonWidth = iconSize * 3 + 'px';
     const buttonFontSize = iconSize * .7 + 'px';
     const buttonBorderRadius = iconSize / 5 + 'px';
     const buttonMargin = iconSize / 10 +'px';
+
     // Draw buttons
     const saveButton = drawButton('saveButton', 'Save', buttonHeight, buttonWidth, buttonFontSize, buttonBorderRadius, buttonMargin);
     saveButton.addEventListener('click', saveSettings);
@@ -290,7 +284,7 @@ function drawSettings(gameSize, iconSize, iconMargin) {
 
 function drawCheckbox(iconSize, option, id, labelText) {
     const p = document.createElement('p');
-    document.getElementById('game').appendChild(p);
+    p.style.margin = iconSize / 8 + 'px';
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.id = 'checkbox' + id;
@@ -304,27 +298,114 @@ function drawCheckbox(iconSize, option, id, labelText) {
     }
     p.appendChild(checkbox);
     const label = document.createElement('label');
-    label.for = 'checkbox' + id;
+    label.for = id;
     label.innerHTML = labelText;
     label.style.fontSize = iconSize / 1.5 +'px';
     p.appendChild(label);
     return p;
 }
 
+function drawTextInput(iconSize, id, labelText) {
+    const p = document.createElement('p');
+    p.style.margin = iconSize / 8 + 'px';
+    const textInput = document.createElement('input');
+    textInput.id = id;
+    textInput.style.height = iconSize / 1.5 + 'px';
+    textInput.style.width = iconSize * 1.5 + 'px';
+    textInput.style.fontSize = iconSize / 1.5 + 'px';
+    p.appendChild(textInput);
+    const label = document.createElement('label');
+    label.for = id;
+    label.innerHTML = labelText;
+    label.style.fontSize = iconSize / 1.5 +'px';
+    p.appendChild(label);
+    return p;
+}
 
-
-
+function drawSelect(iconSize, id, labelText, selectOptions) {
+    const p = document.createElement('p');
+    p.style.margin = iconSize / 8 + 'px';
+    const select = document.createElement('select');
+    select.id = id;
+    select.style.height = iconSize / 1.5 + 'px';
+    select.style.fontSize = iconSize / 1.8 + 'px';
+    p.appendChild(select);
+    for (let i = 0; i < selectOptions.length; i++) {
+        const option = document.createElement('option');
+        option.value = selectOptions[i];
+        option.innerHTML = selectOptions[i];
+        select.appendChild(option);
+    }
+    const label = document.createElement('label');
+    label.for = id;
+    label.innerHTML = labelText;
+    label.style.fontSize = iconSize / 1.5 +'px';
+    p.appendChild(label);
+    return p;
+}
 
 function closeSettings() {
-    if (confirm('Are you sure you want to close the settings page? Any changes will not be saved.')) {
+    if (JSON.stringify(options) === JSON.stringify(tempOptions)) {
         settingsMenu = false;
         drawGame();
+    }
+    else {
+        if (confirm('Are you sure you want to close the settings page? Your changes will not be saved.')) {
+            settingsMenu = false;
+            drawGame();
+        }
     }
 }
 
 function saveSettings() {
+    // Check dealerSpeed input
+    if (tempOptions.dealerSpeed !== options.dealerSpeed) {
+        if (isNaN(tempOptions.dealerSpeed)) {
+            tempOptions.dealerSpeed = options.dealerSpeed;
+        }
+        else {
+            tempOptions.dealerSpeed = Number(tempOptions.dealerSpeed);
+        }
+        if (tempOptions.dealerSpeed < 0) {
+            tempOptions.dealerSpeed = 0;
+        }
+    }
+    // Check numberOfDecks input
+    if (tempOptions.numberOfDecks !== options.numberOfDecks) {
+        if (isNaN(tempOptions.numberOfDecks)) {
+            tempOptions.numberOfDecks = options.numberOfDecks;
+        }
+        else {
+            tempOptions.numberOfDecks = parseInt(tempOptions.numberOfDecks);
+        }
+        if (tempOptions.numberOfDecks < 1) {
+            tempOptions.numberOfDecks = 1;
+        }
+        shoe = shuffle(tempOptions.numberOfDecks);
+    }
+    // Check shoePenetration input and convert to decimal percentage
+    if (tempOptions.shoePenetration !== options.shoePenetration) {
+        if (isNaN(tempOptions.shoePenetration)) {
+            tempOptions.shoePenetration = options.shoePenetration;
+        }
+        else {
+            tempOptions.shoePenetration = Number(tempOptions.shoePenetration);
+        }
+        if (tempOptions.shoePenetration < 0) {
+            tempOptions.shoePenetration = 0;
+        }
+        if (tempOptions.shoePenetration > 100) {
+            tempOptions.shoePenetration = 100;
+        }
+        tempOptions.shoePenetration = tempOptions.shoePenetration / 100;
+    }
+    // Buy in chips
+    console.log(!isNaN(tempOptions.buyIn));
+    if (!isNaN(tempOptions.buyIn) && tempOptions.buyIn !== null) {
+        cash += parseInt(tempOptions.buyIn);
+    }
+    tempOptions.buyIn = null;
     options = structuredClone(tempOptions);
-    alert('Settings saved.');
     settingsMenu = false;
     drawGame();
 }
@@ -540,12 +621,18 @@ function drawPlayer(gameSize, iconSize, iconMargin, cardWidth, cardHeight) {
 function drawBet(gameSize, iconSize) {
     // If shoe is getting low, reshuffle
     const shuffling = document.createElement('p');
-    shuffling.id = 'shuffling'
-    shuffling.innerHTML = 'Shuffling'
-    if (shoe.length < options.numberOfDecks * 52 * (1 - options.shoePenatration)) {
+    shuffling.id = 'shuffling';
+    shuffling.innerHTML = 'Shuffling';
+    shuffling.style.fontSize = iconSize / 1.5 + 'px';
+    shuffling.style.position = 'absolute';
+    shuffling.style.bottom = iconSize * 1.6 + 'px';
+    if (shoe.length < options.numberOfDecks * 52 * (1 - options.shoePenetration)) {
         shoe = shuffle(options.numberOfDecks);
         document.getElementById('game').appendChild(shuffling);
+        shufflingWidth = shuffling.getBoundingClientRect().width;
+        shuffling.style.left = (gameSize / 2 - shufflingWidth / 2) + 'px';
     }
+    
     // Create placeBetDiv
     const placeBetDiv = document.createElement('div');
     placeBetDiv.style.position = 'absolute';
@@ -565,6 +652,7 @@ function drawBet(gameSize, iconSize) {
     }
     placeBetDiv.appendChild(input);
     document.getElementById('betValue').focus();
+
     // Create Bet button
     const button = document.createElement('button');
     button.id = 'betButton';
@@ -581,6 +669,7 @@ function drawBet(gameSize, iconSize) {
             betPlaced();
         }
     })
+
     // Center placeBetDiv
     placeBetDivWidth = placeBetDiv.getBoundingClientRect().width;
     placeBetDiv.style.left = (gameSize / 2 - placeBetDivWidth / 2) + 'px';
@@ -622,7 +711,7 @@ function drawButtons(gameSize, iconSize) {
     bottomButtonsDiv.appendChild(splitButton);
     splitButton.addEventListener('click', split);
     // If surrender isn't allowed
-    if (options.surrender !== 'notAllowed') {
+    if (options.surrender !== 'Not Allowed') {
         // Create surrender button
         const surrenderButton = drawButton('surrenderButton', 'Surrender', buttonHeight, buttonWidth, buttonFontSize, buttonBorderRadius, buttonMargin);
         bottomButtonsDiv.appendChild(surrenderButton);
@@ -681,7 +770,7 @@ function betPlaced() {
             dealHand();
         }
         else {
-            alert('Not enough cash.')
+            alert('Not enough cash. You can add more in the settings.')
         }
     }
 }
@@ -715,13 +804,22 @@ function shuffle(numberOfDecks) {
     // DEV ONLY
     // decks = ['2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s', '2s'];
     // decks = ['As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As', 'As'];
-    // options.shoePenatration = 1;
-    // decks = ['Qh', 'Ks', '5h', '5c', '3h', '4s', '6h', '3s', '2d' ,'4s', 'As', '5d', '3s', '4h', '8c', '2s', '8h', 'Kh', '8s', '7h', '8d'];
+    // decks = ['3h', '2s', '5h', '5c', '3h', '4s', '6h', '3s', '2d' ,'4s', 'As', '5d', '3s', '4h', '8c', '2s', '8h', 'Kh', '8s', '7h', '8d'];
+    // options.shoePenetration = 1;
     return decks;
 }
 
 // Deal hand
 function dealHand() {
+    // Check if shoe is too low to deal hand
+    if (shoe.length <= 4) {
+        alert('There are less than 5 cards left in the shoe. Lower the shoe penetration in the settings to avoid this problem.')
+        phase = 'bet';
+        lastBet = null;
+        cash += bets[0];
+        drawGame();
+        return;
+    }
     // Deal 2 cards to the dealer and player
     for (let i = 0; i < 2; i++) {
         setTimeout(() => {
@@ -822,6 +920,13 @@ function getTotal(hand) {
 // If it's the player's turn, hit
 function hit() {
     if (phase === 'player') {
+        // Check if shoe is empty
+        if (shoe.length === 0) {
+            alert('There are no more cards left in the shoe. Lower the shoe penetration in the settings to avoid this problem.')
+            phase = 'bet';
+            drawGame();
+            return;
+        }
         hands[activeHand].push(shoe.pop());
         drawGame();
         const handTotal = getTotal(hands[activeHand]);
@@ -953,12 +1058,12 @@ function split() {
 // Check if it's possible to surrender hand
 function surrender() {
     if (phase === 'player') {
-        if (options.surrender === 'notAllowed') {
+        if (options.surrender === 'Not Allowed') {
             alert("Surrender isn't allowed. You can change this rule in the settings.");
         }
         else {
             if (hands.length === 1 && hands[0].length === 2) {
-                if (options.surrender === 'nonAces') {
+                if (options.surrender === 'Non-Aces') {
                     if (dealer[1][0] === 'A') {
                         alert("You can't surrender when the dealer's upcard is an Ace. You can change this rule in the settings.");
                     }
@@ -966,7 +1071,7 @@ function surrender() {
                         paySurrender();
                     }
                 }
-                else if (options.surrender === 'allCards') {
+                else if (options.surrender === 'All Cards') {
                     paySurrender();
                 }
             }
@@ -1013,6 +1118,13 @@ function dealersTurn() {
         let dealerHand = [...dealer];
 
         function dealerHit() {
+            // Check if shoe is empty
+            if (shoe.length === 0) {
+                alert('There are no more cards left in the shoe. Lower the shoe penetration in the settings to avoid this problem.')
+                phase = 'bet';
+                drawGame();
+                return;
+            }
             let total = getTotal(dealerHand);
             if (total.length === 1) {
                 // Hard hand logic
