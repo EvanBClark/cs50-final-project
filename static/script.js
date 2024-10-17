@@ -424,10 +424,10 @@ function drawGame() {
     }
     // Make game div a square using the smallest of the container's dimensions
     let gameSize;
-    if (window.innerWidth >= window.innerHeight) {
-        gameSize = window.innerHeight;
+    if (window.visualViewport.width >= window.visualViewport.height) {
+        gameSize = window.visualViewport.height;
     } else {
-        gameSize = window.innerWidth;
+        gameSize = window.visualViewport.width;
     }
     game.style.width = gameSize + 'px';
     game.style.height = gameSize + 'px';
