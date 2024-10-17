@@ -734,7 +734,7 @@ function drawBet(gameSize, iconSize) {
         input.value = lastBet;
     }
     placeBetDiv.appendChild(input);
-    document.getElementById('betValue').focus();
+    // document.getElementById('betValue').focus();
 
     // Create Bet button
     const button = document.createElement('button');
