@@ -43,17 +43,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // If window is resized, redraw game
-let resizeTimeout;
-let resizeScheduled = false;
-
 window.addEventListener('resize', function() {
-    if (!resizeScheduled) {
-        resizeScheduled = true;
-        requestAnimationFrame(() => {
-            drawGame();
-            resizeScheduled = false;
-        });
-    }
+    drawGame();
 });
 
 // Main function
