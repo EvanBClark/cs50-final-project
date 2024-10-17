@@ -43,8 +43,17 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // If window is resized, redraw game
+let resizeTimeout;
+let resizeScheduled = false;
+
 window.addEventListener('resize', function() {
-    drawGame();
+    if (!resizeScheduled) {
+        resizeScheduled = true;
+        requestAnimationFrame(() => {
+            drawGame();
+            resizeScheduled = false;
+        });
+    }
 });
 
 // Main function
@@ -409,52 +418,49 @@ function saveSettings() {
     drawGame();
 }
 
-let lastGameSize = { width: 0, height: 0 };
-
 function drawGame() {
     const container = document.getElementById('container');
+    // If game div exists, delete everything in it, else create it
     let game = document.getElementById('game');
-    if (!game) {
+    if (game) {
+        game.innerHTML = '';
+    }
+    else {
         game = document.createElement('div');
         game.id = 'game';
         game.style.textAlign = 'center';
         container.appendChild(game);
     }
-
+    // Make game div a square using the smallest of the container's dimensions
     let gameSize;
     if (window.innerWidth >= window.innerHeight) {
         gameSize = window.innerHeight;
     } else {
         gameSize = window.innerWidth;
     }
-
-    if (gameSize === lastGameSize.width && gameSize === lastGameSize.height) {
-        return; // No need to redraw if the size hasn't changed
-    }
-
-    lastGameSize.width = gameSize;
-    lastGameSize.height = gameSize;
-
     game.style.width = gameSize + 'px';
     game.style.height = gameSize + 'px';
     game.style.position = 'relative';
-    game.innerHTML = '';
-
-    // Define constants and draw game elements
+    document.getElementById('container').appendChild(game);
+    // Define constants
     const iconSize = gameSize / 15;
     const iconMargin = gameSize / 150;
     const cardWidth = gameSize / 5;
     const cardHeight = cardWidth * 1.452;
-
+    // If settings menu is open
     if (settingsMenu) {
         drawSettings(gameSize, iconSize, iconMargin);
-    } else {
+    }
+    else {
+        // Draw the contents of the game
         drawHeader(gameSize, iconSize, iconMargin);
         drawDealer(gameSize, iconSize, iconMargin, cardWidth);
         drawPlayer(gameSize, iconSize, iconMargin, cardWidth, cardHeight);
+        // drawBet or drawButtons depending on game phase
         if (phase === 'bet') {
             drawBet(gameSize, iconSize);
-        } else {
+        }
+        else {
             drawButtons(gameSize, iconSize);
         }
     }
