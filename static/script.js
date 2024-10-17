@@ -43,8 +43,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // If window is resized, redraw game
+let resizeTimeout;
 window.addEventListener('resize', function() {
-    drawGame();
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(drawGame, 200);
 });
 
 // Main function
