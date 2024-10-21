@@ -739,13 +739,13 @@ function drawBet(gameSize, iconSize) {
     input.style.height = iconSize + 'px';
     input.style.width = iconSize * 2 + 'px';
     input.style.fontSize = iconSize * .8 +'px';
+    input.autocomplete = 'off';
     if (lastBet) {
         input.value = lastBet;
     }
     placeBetDiv.appendChild(input);
     document.getElementById('betValue').focus();
     document.getElementById('betValue').select();
-
 
     // Create Bet button
     const button = document.createElement('button');
@@ -758,7 +758,6 @@ function drawBet(gameSize, iconSize) {
     button.style.borderRadius = iconSize / 5 + 'px';
     placeBetDiv.appendChild(button);
     button.addEventListener('click', betPlaced);
-    input.autocomplete = 'off';
     input.addEventListener('keypress', function(event) {
         if (event.key === 'Enter') {
             betPlaced();
