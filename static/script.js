@@ -21,9 +21,8 @@ const defaultOptions = {
     soft17: 'hits', // hits, stands
     doubleAfterSplit: true,
     splitAces1Card: true,
-    //doubleVariation: 'All Cards', // 'All Cards' or '9,10, or 11' // STILL NEED TO ADD
     surrender: 'Not Allowed', // Not Allowed, Non-Aces, All Cards
-    dealerPeak: true,
+    dealerPeek: true,
     insurance: false,
     buyIn: null,
     hitKey: ' ',
@@ -46,17 +45,13 @@ document.addEventListener('DOMContentLoaded', function() {
 let lastViewportHeight = window.visualViewport.height;
 window.addEventListener('resize', function() {
     const currentViewportHeight = window.visualViewport.height;
-    // Check if the viewport height has decreased significantly
-    if (currentViewportHeight < lastViewportHeight * 0.9) {
-        console.log('Soft keyboard is likely open');
-    } else {
-        console.log('Window resized or keyboard closed');
+    // Check if the viewport height has decreased significantly (for softkeyboard open)
+    if (currentViewportHeight > lastViewportHeight * 0.9) {
         drawGame();
     }
     lastViewportHeight = currentViewportHeight;
 });
 
-// Main function
 function main() {
     addKeyboardEventListeners();
     shoe = shuffle(options.numberOfDecks);
@@ -96,7 +91,6 @@ function addKeyboardEventListeners() {
     });
 }
 
-// Load image
 function loadImage(src) {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -107,7 +101,6 @@ function loadImage(src) {
     });
 }
 
-// Pre-load all images
 async function preloadImages() {
     const fileNames = createDeck();
     const otherFileNames = ['whiteX', 'chips', 'settings', 'red'];
@@ -215,15 +208,15 @@ function drawSettings(gameSize, iconSize, iconMargin) {
         }
     })
 
-    // Draw dealerPeak option
-    const dealerPeak = drawCheckbox(iconSize, tempOptions.dealerPeak, 'dealerPeak', ' Dealer peaks for blackjack');
-    document.getElementById('game').appendChild(dealerPeak);
-    dealerPeak.addEventListener('click', function() {
-        if (document.getElementById('checkboxdealerPeak').checked) {
-            tempOptions.dealerPeak = true;
+    // Draw dealerPeek option
+    const dealerPeek = drawCheckbox(iconSize, tempOptions.dealerPeek, 'dealerPeek', ' Dealer peeks for blackjack');
+    document.getElementById('game').appendChild(dealerPeek);
+    dealerPeek.addEventListener('click', function() {
+        if (document.getElementById('checkboxdealerPeek').checked) {
+            tempOptions.dealerPeek = true;
         }
         else {
-            tempOptions.dealerPeak = false;
+            tempOptions.dealerPeek = false;
         }
     })
 
@@ -319,6 +312,7 @@ function drawTextInput(iconSize, id, labelText) {
     p.style.margin = iconSize / 8 + 'px';
     const textInput = document.createElement('input');
     textInput.id = id;
+    textInput.type = 'number';
     textInput.style.height = iconSize / 1.5 + 'px';
     textInput.style.width = iconSize * 1.5 + 'px';
     textInput.style.fontSize = iconSize / 1.5 + 'px';
@@ -493,7 +487,7 @@ function drawHeader(gameSize, iconSize, iconMargin) {
     chipsValue.innerHTML = cash;
 
     // Draw dealer lights
-    if (options.dealerPeak) {
+    if (options.dealerPeek) {
         // Background
         const lightsDiv = document.createElement('div');
         lightsDiv.style.height = iconSize + 'px';
@@ -709,7 +703,6 @@ function formatPlayerTotal(total) {
     return total;
 }
 
-// Take bet
 function drawBet(gameSize, iconSize) {
     // If shoe is getting low, reshuffle
     const shuffling = document.createElement('p');
@@ -739,15 +732,13 @@ function drawBet(gameSize, iconSize) {
     input.style.height = iconSize + 'px';
     input.style.width = iconSize * 2 + 'px';
     input.style.fontSize = iconSize * .8 +'px';
-    input.name = 'ignore-this-field';
-    input.autocomplete = 'off';
-    input.inputMode = 'none';
     if (lastBet) {
         input.value = lastBet;
     }
     placeBetDiv.appendChild(input);
     document.getElementById('betValue').focus();
     document.getElementById('betValue').select();
+
 
     // Create Bet button
     const button = document.createElement('button');
@@ -771,7 +762,6 @@ function drawBet(gameSize, iconSize) {
     placeBetDiv.style.left = (gameSize / 2 - placeBetDivWidth / 2) + 'px';
 }
 
-// Draw buttons
 function drawButtons(gameSize, iconSize) {
     // Define button properties
     const buttonHeight = iconSize + 'px';
@@ -871,7 +861,6 @@ function betPlaced() {
     }
 }
 
-// Create a standard 52 card deck
 function createDeck() {
     const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'];
     const suits = ['c', 'd', 'h', 's'];
@@ -884,7 +873,6 @@ function createDeck() {
     return deck;
 }
 
-// Shuffle deck(s)
 function shuffle(numberOfDecks) {
     const deck = createDeck();
     let decks = [];
@@ -906,7 +894,6 @@ function shuffle(numberOfDecks) {
     return decks;
 }
 
-// Deal hand
 function dealHand() {
     // Check if shoe is too low to deal hand
     if (shoe.length <= 4) {
@@ -957,7 +944,7 @@ function peak() {
 }
 
 function continuePeak() {
-    if (options.dealerPeak === true) {
+    if (options.dealerPeek === true) {
         // If 10 or ace showing
         if (['A', 'K', 'Q', 'J', 'T'].includes(dealer[1][0])) {
             // If blackjack
@@ -984,8 +971,8 @@ function continuePeak() {
     }
 }
 
-// Return total value of hand as an array with 1 or 2 values
 function getTotal(hand) {
+    // Return total value of hand as an array with 1 or 2 values
     let total = [0];
     for (let card = 0; card < hand.length; card++) {
         if (hand[card][0] === 'A') {
@@ -1013,7 +1000,6 @@ function getTotal(hand) {
     return total;
 }
 
-// If it's the player's turn, hit
 function hit() {
     if (phase === 'player') {
         // Check if shoe is empty
@@ -1038,7 +1024,6 @@ function hit() {
     }
 }
 
-// If player has more hands to play, move to next hand, otherwise start dealer's turn
 function nextHand() {
     if (phase === 'player') {
         // If hand busted, take bet
@@ -1066,7 +1051,6 @@ function nextHand() {
     }
 }
 
-// Double bet and deal card
 function double() {
     if (phase === 'player') {
         // If doubleAfterSplit isn't allowed and player already has more than one hand
@@ -1095,7 +1079,6 @@ function double() {
     }
 }
 
-// Split hand
 function split() {
     if (phase === 'player') {
         // If the current hand has 2 cards and the values are the same
@@ -1151,8 +1134,8 @@ function split() {
     }
 }
 
-// Check if it's possible to surrender hand
 function surrender() {
+    // Check if it's possible to surrender hand
     if (phase === 'player') {
         if (options.surrender === 'Not Allowed') {
             alert("Surrender isn't allowed. You can change this rule in the settings.");
@@ -1178,7 +1161,6 @@ function surrender() {
     }
 }
 
-// Surrender hand
 function paySurrender() {
     // Give half of bet back (rounded down), set bet to half, next hand
     cash += Math.trunc(bets[activeHand] / 2);
@@ -1187,7 +1169,6 @@ function paySurrender() {
     drawGame();
 }
 
-// Dealer's turn
 function dealersTurn() {
     // Check for dealer blackjack and pay insurance
     if (getTotal(dealer).length === 2 && getTotal(dealer)[1] === 21) {
