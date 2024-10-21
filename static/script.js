@@ -77,7 +77,7 @@ const handleResize = debounce(function() {
     }
     
     lastViewportHeight = currentViewportHeight;
-}, 10); // Adjust the debounce delay as necessary
+}, 50); // Adjust the debounce delay as necessary
 
 window.addEventListener('resize', handleResize);
 
