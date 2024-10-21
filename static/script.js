@@ -45,19 +45,25 @@ document.addEventListener('DOMContentLoaded', function() {
 // If window is resized, redraw game
 let resizeTimeout;
 let lastViewportHeight = window.visualViewport.height;
+let keyboardOpen = false;
+
 window.addEventListener('resize', function() {
     const currentViewportHeight = window.visualViewport.height;
-    // Check if the viewport height has decreased significantly
+
     if (currentViewportHeight < lastViewportHeight * 0.9) {
-        console.log('Soft keyboard is likely open');
+        if (!keyboardOpen) {
+            console.log('Soft keyboard is likely open');
+            keyboardOpen = true;
+        }
     } else {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
             console.log('Window resized or keyboard closed');
             drawGame();
+            keyboardOpen = false;
         }, 300);
-
     }
+
     lastViewportHeight = currentViewportHeight;
 });
 
