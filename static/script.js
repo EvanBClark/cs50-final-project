@@ -43,8 +43,17 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // If window is resized, redraw game
+let lastViewportHeight = window.visualViewport.height;
 window.addEventListener('resize', function() {
-    drawGame();
+    const currentViewportHeight = window.visualViewport.height;
+    // Check if the viewport height has decreased significantly
+    if (currentViewportHeight < lastViewportHeight * 0.9) {
+        console.log('Soft keyboard is likely open');
+    } else {
+        console.log('Window resized or keyboard closed');
+        drawGame();
+    }
+    lastViewportHeight = currentViewportHeight;
 });
 
 // Main function
@@ -424,10 +433,10 @@ function drawGame() {
     }
     // Make game div a square using the smallest of the container's dimensions
     let gameSize;
-    if (window.visualViewport.width >= window.visualViewport.height) {
-        gameSize = window.visualViewport.height;
+    if (container.clientWidth >= container.clientHeight) {
+        gameSize = container.clientHeight;
     } else {
-        gameSize = window.visualViewport.width;
+        gameSize = container.clientWidth;
     }
     game.style.width = gameSize + 'px';
     game.style.height = gameSize + 'px';
