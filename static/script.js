@@ -42,44 +42,19 @@ document.addEventListener('DOMContentLoaded', function() {
     preloadImages(); 
 });
 
+// If window is resized, redraw game
 let lastViewportHeight = window.visualViewport.height;
-let isPasswordManagerOpen = false;
-
-// Debounce function
-function debounce(func, delay) {
-    let timeout;
-    return function() {
-        clearTimeout(timeout);
-        timeout = setTimeout(func, delay);
-    };
-}
-
-// Handle resize events
-const handleResize = debounce(function() {
+window.addEventListener('resize', function() {
     const currentViewportHeight = window.visualViewport.height;
-
     // Check if the viewport height has decreased significantly
     if (currentViewportHeight < lastViewportHeight * 0.9) {
         console.log('Soft keyboard is likely open');
     } else {
-        // Check if the height change is significant enough to indicate password manager
-        if (currentViewportHeight < lastViewportHeight) {
-            isPasswordManagerOpen = true; // Assume password manager might be open
-        } else {
-            if (isPasswordManagerOpen) {
-                console.log('Password manager closed');
-                isPasswordManagerOpen = false; // Reset the flag
-            } else {
-                console.log('Window resized or keyboard closed');
-                drawGame();
-            }
-        }
+        console.log('Window resized or keyboard closed');
+        drawGame();
     }
-    
     lastViewportHeight = currentViewportHeight;
-}, 50); // Adjust the debounce delay as necessary
-
-window.addEventListener('resize', handleResize);
+});
 
 // Main function
 function main() {
