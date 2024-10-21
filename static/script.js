@@ -741,6 +741,7 @@ function drawBet(gameSize, iconSize) {
     input.style.fontSize = iconSize * .8 +'px';
     input.name = 'ignore-this-field';
     input.autocomplete = 'off';
+    input.inputMode = 'none';
     if (lastBet) {
         input.value = lastBet;
     }
