@@ -42,30 +42,44 @@ document.addEventListener('DOMContentLoaded', function() {
     preloadImages(); 
 });
 
-// If window is resized, redraw game
-let resizeTimeout;
 let lastViewportHeight = window.visualViewport.height;
-let keyboardOpen = false;
+let isPasswordManagerOpen = false;
 
-window.addEventListener('resize', function() {
+// Debounce function
+function debounce(func, delay) {
+    let timeout;
+    return function() {
+        clearTimeout(timeout);
+        timeout = setTimeout(func, delay);
+    };
+}
+
+// Handle resize events
+const handleResize = debounce(function() {
     const currentViewportHeight = window.visualViewport.height;
 
+    // Check if the viewport height has decreased significantly
     if (currentViewportHeight < lastViewportHeight * 0.9) {
-        if (!keyboardOpen) {
-            console.log('Soft keyboard is likely open');
-            keyboardOpen = true;
-        }
+        console.log('Soft keyboard is likely open');
     } else {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            console.log('Window resized or keyboard closed');
-            drawGame();
-            keyboardOpen = false;
-        }, 300);
+        // Check if the height change is significant enough to indicate password manager
+        if (currentViewportHeight < lastViewportHeight) {
+            isPasswordManagerOpen = true; // Assume password manager might be open
+        } else {
+            if (isPasswordManagerOpen) {
+                console.log('Password manager closed');
+                isPasswordManagerOpen = false; // Reset the flag
+            } else {
+                console.log('Window resized or keyboard closed');
+                drawGame();
+            }
+        }
     }
-
+    
     lastViewportHeight = currentViewportHeight;
-});
+}, 300); // Adjust the debounce delay as necessary
+
+window.addEventListener('resize', handleResize);
 
 // Main function
 function main() {
@@ -754,10 +768,8 @@ function drawBet(gameSize, iconSize) {
         input.value = lastBet;
     }
     placeBetDiv.appendChild(input);
-    setTimeout(() => {
-        document.getElementById('betValue').focus();
-        document.getElementById('betValue').select();
-    }, 500);
+    document.getElementById('betValue').focus();
+    document.getElementById('betValue').select();
 
 
     // Create Bet button
