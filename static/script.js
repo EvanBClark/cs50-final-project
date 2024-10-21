@@ -22,7 +22,7 @@ const defaultOptions = {
     doubleAfterSplit: true,
     splitAces1Card: true,
     surrender: 'Not Allowed', // Not Allowed, Non-Aces, All Cards
-    dealerPeek: true,
+    dealerPeak: true,
     insurance: false,
     buyIn: null,
     hitKey: ' ',
@@ -42,14 +42,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // If window is resized, redraw game
-let lastViewportHeight = window.visualViewport.height;
 window.addEventListener('resize', function() {
-    const currentViewportHeight = window.visualViewport.height;
-    // Check if the viewport height has decreased significantly (for softkeyboard open)
-    if (currentViewportHeight > lastViewportHeight * 0.9) {
-        drawGame();
-    }
-    lastViewportHeight = currentViewportHeight;
+    drawGame();
 });
 
 function main() {
@@ -208,15 +202,15 @@ function drawSettings(gameSize, iconSize, iconMargin) {
         }
     })
 
-    // Draw dealerPeek option
-    const dealerPeek = drawCheckbox(iconSize, tempOptions.dealerPeek, 'dealerPeek', ' Dealer peeks for blackjack');
-    document.getElementById('game').appendChild(dealerPeek);
-    dealerPeek.addEventListener('click', function() {
-        if (document.getElementById('checkboxdealerPeek').checked) {
-            tempOptions.dealerPeek = true;
+    // Draw dealerPeak option
+    const dealerPeak = drawCheckbox(iconSize, tempOptions.dealerPeak, 'dealerPeak', ' Dealer peaks for blackjack');
+    document.getElementById('game').appendChild(dealerPeak);
+    dealerPeak.addEventListener('click', function() {
+        if (document.getElementById('checkboxdealerPeak').checked) {
+            tempOptions.dealerPeak = true;
         }
         else {
-            tempOptions.dealerPeek = false;
+            tempOptions.dealerPeak = false;
         }
     })
 
@@ -487,7 +481,7 @@ function drawHeader(gameSize, iconSize, iconMargin) {
     chipsValue.innerHTML = cash;
 
     // Draw dealer lights
-    if (options.dealerPeek) {
+    if (options.dealerPeak) {
         // Background
         const lightsDiv = document.createElement('div');
         lightsDiv.style.height = iconSize + 'px';
@@ -944,7 +938,7 @@ function peak() {
 }
 
 function continuePeak() {
-    if (options.dealerPeek === true) {
+    if (options.dealerPeak === true) {
         // If 10 or ace showing
         if (['A', 'K', 'Q', 'J', 'T'].includes(dealer[1][0])) {
             // If blackjack
