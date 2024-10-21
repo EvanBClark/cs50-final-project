@@ -55,7 +55,7 @@ window.addEventListener('resize', function() {
         resizeTimeout = setTimeout(() => {
             console.log('Window resized or keyboard closed');
             drawGame();
-        }, 100);
+        }, 300);
 
     }
     lastViewportHeight = currentViewportHeight;
