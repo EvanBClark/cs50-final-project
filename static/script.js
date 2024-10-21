@@ -758,6 +758,7 @@ function drawBet(gameSize, iconSize) {
     button.style.borderRadius = iconSize / 5 + 'px';
     placeBetDiv.appendChild(button);
     button.addEventListener('click', betPlaced);
+    input.autocomplete = 'off';
     input.addEventListener('keypress', function(event) {
         if (event.key === 'Enter') {
             betPlaced();
