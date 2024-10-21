@@ -43,27 +43,16 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // If window is resized, redraw game
-let resizeTimeout;
 let lastViewportHeight = window.visualViewport.height;
-let keyboardOpen = false;
-
 window.addEventListener('resize', function() {
     const currentViewportHeight = window.visualViewport.height;
-
+    // Check if the viewport height has decreased significantly
     if (currentViewportHeight < lastViewportHeight * 0.9) {
-        if (!keyboardOpen) {
-            console.log('Soft keyboard is likely open');
-            keyboardOpen = true;
-        }
+        console.log('Soft keyboard is likely open');
     } else {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            console.log('Window resized or keyboard closed');
-            drawGame();
-            keyboardOpen = false;
-        }, 300);
+        console.log('Window resized or keyboard closed');
+        drawGame();
     }
-
     lastViewportHeight = currentViewportHeight;
 });
 
@@ -754,8 +743,10 @@ function drawBet(gameSize, iconSize) {
         input.value = lastBet;
     }
     placeBetDiv.appendChild(input);
-    document.getElementById('betValue').focus();
-    document.getElementById('betValue').select();
+    setTimeout(() => {
+        document.getElementById('betValue').focus();
+        document.getElementById('betValue').select();
+    }, 500);
 
 
     // Create Bet button
