@@ -14,11 +14,11 @@ This game is currently only supported on devices without soft keyboards (PC, Mac
 In Blackjack, your goal is to get as close to 21 without going over. Face cards are equal to 10, Aces can be 1 or 11, and cards 2-10 have their respective value. For each hand, you have up to 5 choices, hit, stand, double, split, and surrender. When you hit, you'll receive one more card. When you stand, it moves to either the dealer's turn, or your next hand if you have more hands to play. When you double, your bet doubles and you only receive one more card. You can only split when you have two of the same value cards. When splitting, you must double your bet, then those cards are split up, and dealt one card each, creating two new hands.
 
 ## Keyboard Shortcuts
-Hit - space
-Stand - enter
-Double - d
-Split - s
-Surrender - u
+- Hit - space
+- Stand - enter
+- Double - d
+- Split - s
+- Surrender - u
 
 ## Options
 In the settings menu, you can buy in, which adds more chips to your stack. You can also change any of these settings:
