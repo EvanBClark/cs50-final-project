@@ -22,7 +22,7 @@ const defaultOptions = {
     doubleAfterSplit: true,
     splitAces1Card: true,
     surrender: 'Not Allowed', // Not Allowed, Non-Aces, All Cards
-    dealerPeak: true,
+    dealerPeek: true,
     insurance: false,
     buyIn: null,
     hitKey: ' ',
@@ -202,15 +202,15 @@ function drawSettings(gameSize, iconSize, iconMargin) {
         }
     })
 
-    // Draw dealerPeak option
-    const dealerPeak = drawCheckbox(iconSize, tempOptions.dealerPeak, 'dealerPeak', ' Dealer peaks for blackjack');
-    document.getElementById('game').appendChild(dealerPeak);
-    dealerPeak.addEventListener('click', function() {
-        if (document.getElementById('checkboxdealerPeak').checked) {
-            tempOptions.dealerPeak = true;
+    // Draw dealerPeek option
+    const dealerPeek = drawCheckbox(iconSize, tempOptions.dealerPeek, 'dealerPeek', ' Dealer peeks for blackjack');
+    document.getElementById('game').appendChild(dealerPeek);
+    dealerPeek.addEventListener('click', function() {
+        if (document.getElementById('checkboxdealerPeek').checked) {
+            tempOptions.dealerPeek = true;
         }
         else {
-            tempOptions.dealerPeak = false;
+            tempOptions.dealerPeek = false;
         }
     })
 
@@ -481,7 +481,7 @@ function drawHeader(gameSize, iconSize, iconMargin) {
     chipsValue.innerHTML = cash;
 
     // Draw dealer lights
-    if (options.dealerPeak) {
+    if (options.dealerPeek) {
         // Background
         const lightsDiv = document.createElement('div');
         lightsDiv.style.height = iconSize + 'px';
@@ -910,14 +910,14 @@ function dealHand() {
             // After dealing cards, check for blackjack
             if (i === 1) {
                 setTimeout(() => {
-                    peak();
+                    peek();
                 }, 100); // Small delay to ensure card is drawn
             }
         }, i * options.dealerSpeed * 2 + options.dealerSpeed);
     }
 }
 
-function peak() {
+function peek() {
     // Offer insurance
     if (options.insurance && dealer[1][0] === 'A') {
         setTimeout(() => {
@@ -930,15 +930,15 @@ function peak() {
                     alert("You don't have enough chips to buy insurance.");
                 }
             }
-            continuePeak();
+            continuePeek();
         }, 0);
     } else {
-        continuePeak();
+        continuePeek();
     }
 }
 
-function continuePeak() {
-    if (options.dealerPeak === true) {
+function continuePeek() {
+    if (options.dealerPeek === true) {
         // If 10 or ace showing
         if (['A', 'K', 'Q', 'J', 'T'].includes(dealer[1][0])) {
             // If blackjack
