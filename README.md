@@ -1,5 +1,6 @@
 # Blackjack
 #### Video Demo: https://youtu.be/_IqsYjzlw80
+#### Link: http://18.216.35.207/
 ## Description
 This is a blackjack game with many different rule variations that you can change in the settings. It was written mostly in Javascript. It uses an AWS server running Python using the Flask framework.
 
