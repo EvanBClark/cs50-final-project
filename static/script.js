@@ -18,7 +18,7 @@ const defaultOptions = {
     dealerSpeed: 500, // in milliseconds
     numberOfDecks: 6,
     shoePenetration: .75,
-    soft17: 'hits', // hits, stands
+    soft17: true, // true for hits, false for stands
     doubleAfterSplit: true,
     splitAces1Card: true,
     surrender: 'Not Allowed', // Not Allowed, Non-Aces, All Cards
@@ -195,10 +195,10 @@ function drawSettings(gameSize, iconSize, iconMargin) {
     document.getElementById('game').appendChild(soft17);
     soft17.addEventListener('click', function() {
         if (document.getElementById('checkboxsoft17').checked) {
-            tempOptions.soft17 = 'hits';
+            tempOptions.soft17 = true;
         }
         else {
-            tempOptions.soft17 = 'stands';
+            tempOptions.soft17 = false;
         }
     })
 
@@ -1214,7 +1214,7 @@ function dealersTurn() {
             else if (total.length === 2) {
                 // Soft hand logic
                 let softTotal = total[1];
-                if (softTotal >= 18 || (softTotal === 17 && options.soft17 === 'stand')) {
+                if (softTotal >= 18 || (softTotal === 17 && options.soft17 === false)) {
                     processBets();
                 }
                 else {
